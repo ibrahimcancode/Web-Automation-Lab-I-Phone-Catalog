@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "random_mode": true,
+  "seed": 42,
+  "scenarios": {
+    "cookie_banner": {
+      "enabled": true,
+      "probability": 1.0
+    },
+    "newsletter_popup": {
+      "enabled": true,
+      "probability": 0.35,
+      "min_delay_seconds": 2,
+      "max_delay_seconds": 6
+    },
+    "simulated_captcha": {
+      "enabled": true,
+      "probability": 0.5,
+      "delay_seconds": 1
+    }
+  }
+}

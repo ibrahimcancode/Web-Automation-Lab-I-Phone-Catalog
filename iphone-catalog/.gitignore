@@ -1,0 +1,84 @@
+# ═══════════════════════════════════════════════════════
+# .gitignore — iPhone Catalog (React + Vite)
+# ═══════════════════════════════════════════════════════
+
+# ── Dependencies ──
+node_modules/
+.pnp
+.pnp.js
+
+# ── Build Output ──
+dist/
+dist-ssr/
+build/
+*.local
+
+# ── Environment Variables ──
+.env
+.env.*
+!.env.example
+
+# ── Logs ──
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── IDE / Editor ──
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ── OS Generated ──
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Python (future-proofing) ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+venv/
+.venv/
+env/
+ENV/
+
+# ── Playwright / Testing Artifacts ──
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# ── Package Manager ──
+.npm/
+.yarn/
+.yarnrc.yml
+.pnpm-debug.log*
+
+# ── Misc ──
+*.tsbuildinfo
+.eslintcache
+.node_repl_history
+.cache/

@@ -1,0 +1,13 @@
+{"timestamp":"2026-08-03T13:16:09.704Z","scenario":"workflow","action":"run_started","outcome":"started","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"limit=3"}
+{"timestamp":"2026-08-03T13:16:18.813Z","scenario":"workflow","action":"visited_home","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":null}
+{"timestamp":"2026-08-03T13:16:20.567Z","scenario":"workflow","action":"visited_catalog","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":null}
+{"timestamp":"2026-08-03T13:16:20.736Z","scenario":"workflow","action":"load_more","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=24"}
+{"timestamp":"2026-08-03T13:16:20.928Z","scenario":"workflow","action":"load_more","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=36"}
+{"timestamp":"2026-08-03T13:16:21.099Z","scenario":"workflow","action":"load_more","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=43"}
+{"timestamp":"2026-08-03T13:16:21.105Z","scenario":"workflow","action":"catalog_loaded","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=43"}
+{"timestamp":"2026-08-03T13:16:21.120Z","scenario":"workflow","action":"visit_detail","outcome":"started","duration_ms":null,"step":"detail-1","item_id":"iphone-16e","url":"http://127.0.0.1:5182/model/iphone-16e","detail":null}
+{"timestamp":"2026-08-03T13:16:22.829Z","scenario":"workflow","action":"extracted","outcome":"ok","duration_ms":null,"step":"detail-1","item_id":"iphone-16e","url":null,"detail":null}
+{"timestamp":"2026-08-03T13:16:22.830Z","scenario":"workflow","action":"visit_detail","outcome":"started","duration_ms":null,"step":"detail-2","item_id":"iphone-17","url":"http://127.0.0.1:5182/model/iphone-17","detail":null}
+{"timestamp":"2026-08-03T13:16:24.498Z","scenario":"workflow","action":"extracted","outcome":"ok","duration_ms":null,"step":"detail-2","item_id":"iphone-17","url":null,"detail":null}
+{"timestamp":"2026-08-03T13:16:24.498Z","scenario":"workflow","action":"visit_detail","outcome":"started","duration_ms":null,"step":"detail-3","item_id":"iphone-air","url":"http://127.0.0.1:5182/model/iphone-air","detail":null}
+{"timestamp":"2026-08-03T13:16:26.156Z","scenario":"workflow","action":"extracted","outcome":"ok","duration_ms":null,"step":"detail-3","item_id":"iphone-air","url":null,"detail":null}

@@ -1,0 +1,21 @@
+{
+  "name": "web-automation-lab",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Resilient Web Automation Lab — sandbox site + Playwright bot (Part B). Week 2: baseline bot, evidence infra, first recoveries.",
+  "scripts": {
+    "site": "npm.cmd --prefix iphone-catalog run dev",
+    "site:off": "set VITE_CHAOS_JSON={\"enabled\":false,\"random_mode\":false,\"seed\":42,\"scenarios\":{}}&&npm.cmd --prefix iphone-catalog run dev",
+    "bot": "node bot/run.js",
+    "test": "playwright test",
+    "test:unit": "playwright test tests/test_unit_week2.spec.js",
+    "test:happy": "playwright test tests/test_happy_path.spec.js",
+    "test:scenarios": "playwright test tests/test_scenarios_week2.spec.js",
+    "install:browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "playwright": "^1.62.1"
+  }
+}

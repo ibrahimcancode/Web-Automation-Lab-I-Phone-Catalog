@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs & evidence output (1-2 representative sample runs are committed)
+runs/*
+!runs/sample_*/
+!runs/sample_*/*
+
+# Playwright artifacts
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Python (future-proofing, matches iphone-catalog/.gitignore)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+.eslintcache
+.node_repl_history

@@ -30,6 +30,16 @@ function sleepMs(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Optional human-visible pacing for the `--headed` watch demo (BOT_DEMO_PAUSE_MS
+// env var). Defaults to 0 = no pause, so normal runs are unaffected. It is a
+// demo aid only, never used for correctness — production timing is explicit
+// waits, per the MASTER_SPEC discipline.
+const DEMO_PAUSE_MS = Number(process.env.BOT_DEMO_PAUSE_MS || 0);
+function demoPause() {
+  if (DEMO_PAUSE_MS > 0) return sleepMs(DEMO_PAUSE_MS);
+  return Promise.resolve();
+}
+
 async function isVisible(page, selector) {
   if (!selector) return false;
   try {
@@ -66,6 +76,7 @@ async function sweepPass(ctx, reporter) {
     acted = true;
     reporter.event({ scenario: handler.name, action: 'detected', outcome: 'detected', step: ctx.step, item_id: ctx.itemId });
     await reporter.screenshot(ctx.page, `${handler.name}-detected`);
+    console.log(`[bot] detected: ${handler.name} (step ${ctx.step})`);
 
     let rec = {};
     try {
@@ -81,6 +92,8 @@ async function sweepPass(ctx, reporter) {
       step: ctx.step,
       item_id: ctx.itemId,
     });
+    console.log(`[bot] recovered: ${handler.name} -> ${rec.outcome ?? 'resolved'} ${rec.detail ? `(${rec.detail})` : ''}`);
+    await demoPause();
   }
   return acted;
 }
@@ -254,6 +267,7 @@ async function processItem({ page, baseUrl, href, catalogName, reporter, index }
   const ctx = { page, step: `detail-${index}`, itemId: id };
 
   reporter.event({ scenario: 'workflow', action: 'visit_detail', outcome: 'started', item_id: id, url: href, step: ctx.step });
+  console.log(`[bot] visiting detail: ${id}`);
 
   let lastError = null;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -277,6 +291,7 @@ async function processItem({ page, baseUrl, href, catalogName, reporter, index }
         status: 'ok',
       };
       reporter.event({ scenario: 'workflow', action: 'extracted', outcome: 'ok', item_id: id, step: ctx.step });
+      console.log(`[bot] extracted ${id}: ${data.name} @ $${data.price}`);
       return item;
     } catch (err) {
       lastError = err;
@@ -317,6 +332,8 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
   await waitForPageReady(page, '.page-home');
   await clearObstacles(homeCtx, reporter, { waitMs: FIRST_ACTION_OBSTACLE_WAIT_MS });
   reporter.event({ scenario: 'workflow', action: 'visited_home', outcome: 'ok' });
+  console.log('[bot] home page ready');
+  await demoPause();
 
   // Step 2 — catalog page.
   const catalogCtx = { page, step: 'catalog' };
@@ -324,6 +341,8 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
   await waitForPageReady(page, selectors.catalog.page);
   await clearObstacles(catalogCtx, reporter);
   reporter.event({ scenario: 'workflow', action: 'visited_catalog', outcome: 'ok' });
+  console.log('[bot] catalog page ready');
+  await demoPause();
 
   // Step 3 — reveal all items via "Load more".
   let prevCount = await page.$$eval(selectors.catalog.card, (els) => els.length);

@@ -7,7 +7,10 @@
   "scripts": {
     "site": "npm.cmd --prefix iphone-catalog run dev",
     "site:off": "set VITE_CHAOS_JSON={\"enabled\":false,\"random_mode\":false,\"seed\":42,\"scenarios\":{}}&&npm.cmd --prefix iphone-catalog run dev",
+    "site:all": "set VITE_CHAOS_JSON={\"enabled\":true,\"random_mode\":false,\"seed\":42,\"scenarios\":{\"cookie_banner\":{\"enabled\":true,\"probability\":1.0},\"newsletter_popup\":{\"enabled\":true,\"probability\":1.0,\"min_delay_seconds\":2,\"max_delay_seconds\":6},\"simulated_captcha\":{\"enabled\":true,\"probability\":1.0,\"delay_seconds\":1}}}&&npm.cmd --prefix iphone-catalog run dev",
     "bot": "node bot/run.js",
+    "bot:demo": "node bot/run.js --headed --limit 3",
+    "bot:watch": "set BOT_DEMO_PAUSE_MS=1500&&node bot/run.js --headed --limit 3",
     "test": "playwright test",
     "test:unit": "playwright test tests/test_unit_week2.spec.js",
     "test:happy": "playwright test tests/test_happy_path.spec.js",

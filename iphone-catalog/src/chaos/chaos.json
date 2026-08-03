@@ -17,6 +17,12 @@
       "enabled": true,
       "probability": 0.5,
       "delay_seconds": 1
+    },
+    "server_errors": {
+      "enabled": false,
+      "probability": 0.5,
+      "status_code": 503,
+      "fail_first_n": 0
     }
   }
 }

@@ -1,0 +1,23 @@
+{"timestamp":"2026-08-10T11:19:16.760Z","scenario":"workflow","action":"run_started","outcome":"started","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"limit=3"}
+{"timestamp":"2026-08-10T11:19:17.023Z","scenario":"server_errors","action":"detected","outcome":"detected","duration_ms":null,"step":"home","item_id":null,"url":"http://localhost:5173/","detail":null}
+{"timestamp":"2026-08-10T11:19:17.023Z","scenario":"server_errors","action":"retry","outcome":"retrying","duration_ms":null,"step":null,"item_id":null,"url":"http://localhost:5173/","detail":"attempt 1/4"}
+{"timestamp":"2026-08-10T11:19:18.152Z","scenario":"server_errors","action":"retry","outcome":"retrying","duration_ms":null,"step":null,"item_id":null,"url":"http://localhost:5173/","detail":"attempt 2/4"}
+{"timestamp":"2026-08-10T11:19:18.152Z","scenario":"server_errors","action":"detected","outcome":"detected","duration_ms":null,"step":"home","item_id":null,"url":"http://localhost:5173/","detail":null}
+{"timestamp":"2026-08-10T11:19:20.904Z","scenario":"cookie_banner","action":"detected","outcome":"detected","duration_ms":null,"step":"home","item_id":null,"url":null,"detail":null}
+{"timestamp":"2026-08-10T11:19:21.240Z","scenario":"cookie_banner","action":"recovered","outcome":"resolved","duration_ms":null,"step":"home","item_id":null,"url":null,"detail":"accepted"}
+{"timestamp":"2026-08-10T11:19:21.254Z","scenario":"workflow","action":"visited_home","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":null}
+{"timestamp":"2026-08-10T11:19:22.574Z","scenario":"simulated_captcha","action":"detected","outcome":"detected","duration_ms":null,"step":"catalog","item_id":null,"url":null,"detail":null}
+{"timestamp":"2026-08-10T11:19:24.296Z","scenario":"simulated_captcha","action":"recovered","outcome":"resolved","duration_ms":null,"step":"catalog","item_id":null,"url":null,"detail":"solved 3 - 8"}
+{"timestamp":"2026-08-10T11:19:24.308Z","scenario":"workflow","action":"visited_catalog","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":null}
+{"timestamp":"2026-08-10T11:19:24.480Z","scenario":"workflow","action":"load_more","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=24"}
+{"timestamp":"2026-08-10T11:19:24.658Z","scenario":"workflow","action":"load_more","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=36"}
+{"timestamp":"2026-08-10T11:19:29.691Z","scenario":"newsletter_popup","action":"detected","outcome":"detected","duration_ms":null,"step":"catalog","item_id":null,"url":null,"detail":null}
+{"timestamp":"2026-08-10T11:19:30.287Z","scenario":"newsletter_popup","action":"recovered","outcome":"resolved","duration_ms":null,"step":"catalog","item_id":null,"url":null,"detail":"subscribed:test@example.com"}
+{"timestamp":"2026-08-10T11:19:30.461Z","scenario":"workflow","action":"load_more","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=43"}
+{"timestamp":"2026-08-10T11:19:30.483Z","scenario":"workflow","action":"catalog_loaded","outcome":"ok","duration_ms":null,"step":null,"item_id":null,"url":null,"detail":"cards=43"}
+{"timestamp":"2026-08-10T11:19:30.507Z","scenario":"workflow","action":"visit_detail","outcome":"started","duration_ms":null,"step":"detail-1","item_id":"iphone-16e","url":"http://localhost:5173/model/iphone-16e","detail":null}
+{"timestamp":"2026-08-10T11:19:32.422Z","scenario":"workflow","action":"extracted","outcome":"ok","duration_ms":null,"step":"detail-1","item_id":"iphone-16e","url":null,"detail":null}
+{"timestamp":"2026-08-10T11:19:32.423Z","scenario":"workflow","action":"visit_detail","outcome":"started","duration_ms":null,"step":"detail-2","item_id":"iphone-17","url":"http://localhost:5173/model/iphone-17","detail":null}
+{"timestamp":"2026-08-10T11:19:34.140Z","scenario":"workflow","action":"extracted","outcome":"ok","duration_ms":null,"step":"detail-2","item_id":"iphone-17","url":null,"detail":null}
+{"timestamp":"2026-08-10T11:19:34.140Z","scenario":"workflow","action":"visit_detail","outcome":"started","duration_ms":null,"step":"detail-3","item_id":"iphone-air","url":"http://localhost:5173/model/iphone-air","detail":null}
+{"timestamp":"2026-08-10T11:19:35.825Z","scenario":"workflow","action":"extracted","outcome":"ok","duration_ms":null,"step":"detail-3","item_id":"iphone-air","url":null,"detail":null}

@@ -1,0 +1,53 @@
+[
+  {
+    "id": "iphone-16e",
+    "name": "iPhone 16e",
+    "tier": "SE",
+    "year": 2025,
+    "price": 499,
+    "color": "Black",
+    "storageGBs": [
+      128,
+      256,
+      512
+    ],
+    "url": "http://localhost:5173/model/iphone-16e",
+    "catalogName": "iPhone 16e",
+    "nameMatchesCatalog": true,
+    "status": "ok"
+  },
+  {
+    "id": "iphone-17",
+    "name": "iPhone 17",
+    "tier": "Standard",
+    "year": 2025,
+    "price": 499,
+    "color": "Midnight",
+    "storageGBs": [
+      128,
+      256,
+      512
+    ],
+    "url": "http://localhost:5173/model/iphone-17",
+    "catalogName": "iPhone 17",
+    "nameMatchesCatalog": true,
+    "status": "ok"
+  },
+  {
+    "id": "iphone-air",
+    "name": "iPhone Air",
+    "tier": "Air",
+    "year": 2025,
+    "price": 599,
+    "color": "Midnight",
+    "storageGBs": [
+      128,
+      256,
+      512
+    ],
+    "url": "http://localhost:5173/model/iphone-air",
+    "catalogName": "iPhone Air",
+    "nameMatchesCatalog": true,
+    "status": "ok"
+  }
+]

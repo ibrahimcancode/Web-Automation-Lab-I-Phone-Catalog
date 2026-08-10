@@ -11,15 +11,22 @@ implemented.
   catch-all).
 - **Strategy** — the recovery action, and how success is verified.
 - **Evidence** — where the run log / summary records the detection and recovery.
+- **Automated test** — the test that forces the scenario on deterministically and proves handling.
 
 ## Handled scenarios (Week 2)
 
-| # | Scenario | Sandbox simulation | Detection (`bot/handlers/`) | Handling strategy | Verification | Evidence |
-|---|---|---|---|---|---|---|
-| 2 | Cookie / consent banner | `#cookie-banner` overlay injected ~100ms after load (once per session). | `cookie_banner_handler.js` — `isVisible('#cookie-banner')`. | Click **Accept**; if still present, fall back to **Reject**. | `waitForSelector(... { state: 'hidden' })` after each action. | `events.jsonl` `scenario=cookie_banner` `detected`/`recovered`; screenshot `cookie_banner-detected`. |
-| 1 | Random pop-up / modal (newsletter signup) | `.chaos-popup-overlay[data-chaos="popup"]` appears 2–6s after load; requires a real email submit to dismiss (no simple close X). | `popup_handler.js` — `isVisible('.chaos-popup-overlay[data-chaos="popup"]')`. | Fill well-formed placeholder email (`test@example.com` → `user@example.org` bounded retry), submit, wait for success state, then dismiss and confirm gone. Fallback: close button → ESC. | Success state selector `.chaos-popup-success`; then overlay `hidden`. | `events.jsonl` `scenario=newsletter_popup`; screenshot `newsletter_popup-detected`. |
-| 3 | Simulated captcha gate | `#simulated-captcha-overlay` blocks navigation (once per session) with a checkbox → math challenge (`What is 7 + 3?`). | `captcha_handler.js` — `isVisible('#simulated-captcha-overlay')`. | Click "I'm not a robot", parse the equation (`parseMathQuestion`, pure + unit-tested), submit the answer; one bounded retry on the wrong-answer flash. | Overlay `hidden` after submit. | `events.jsonl` `scenario=simulated_captcha`; screenshot `simulated_captcha-detected`. |
-| 4 | Site down / server errors | Vite middleware (`vite-chaos-server.js`) returns a genuine 503 for HTML navigations (`fail_first_n` deterministic or probability-based). | `server_error_handler.js` (navigation type) — network error OR `response.status() >= 500`. | Exponential backoff retry (`backoff.js`) with a hard cap; on success the workflow resumes from the current item (per-item loop, never a full restart). | Retry succeeds within cap; run continues and completes. | `events.jsonl` `scenario=server_errors` `detected`/`retry`; screenshot `server-error`; summary `retries`. |
+| # | Scenario | Sandbox simulation | Detection (`bot/handlers/`) | Handling strategy | Verification | Evidence | Automated test |
+|---|---|---|---|---|---|---|---|
+| 2 | Cookie / consent banner | `#cookie-banner` overlay injected ~100ms after load (once per session). | `cookie_banner_handler.js` — `isVisible('#cookie-banner')`. | Click **Accept**; if still present, fall back to **Reject**. | `waitForSelector(... { state: 'hidden' })` after each action. | `events.jsonl` `scenario=cookie_banner` `detected`/`recovered`; screenshot `cookie_banner-detected`. | `tests/test_scenarios_week2.spec.js` (cookie_banner); also `tests/test_all_four.spec.js` |
+| 1 | Random pop-up / modal (newsletter signup) | `.chaos-popup-overlay[data-chaos="popup"]` appears 2–6s after load; requires a real email submit to dismiss (no simple close X). | `popup_handler.js` — `isVisible('.chaos-popup-overlay[data-chaos="popup"]')`. | Fill well-formed placeholder email (`test@example.com` → `user@example.org` bounded retry), submit, wait for success state, then dismiss and confirm gone. Fallback: close button → ESC. | Success state selector `.chaos-popup-success`; then overlay `hidden`. | `events.jsonl` `scenario=newsletter_popup`; screenshot `newsletter_popup-detected`. | `tests/test_scenarios_week2.spec.js` (newsletter_popup); also `tests/test_all_four.spec.js` |
+| 3 | Simulated captcha gate | `#simulated-captcha-overlay` blocks navigation (once per session) with a checkbox → math challenge (`What is 7 + 3?`). | `captcha_handler.js` — `isVisible('#simulated-captcha-overlay')`. | Click "I'm not a robot", parse the equation (`parseMathQuestion`, pure + unit-tested), submit the answer; one bounded retry on the wrong-answer flash. | Overlay `hidden` after submit. | `events.jsonl` `scenario=simulated_captcha`; screenshot `simulated_captcha-detected`. | `tests/test_scenarios_week2.spec.js` (simulated_captcha); also `tests/test_all_four.spec.js` |
+| 4 | Site down / server errors | Vite middleware (`vite-chaos-server.js`) returns a genuine 503 for HTML navigations (`fail_first_n` deterministic or probability-based). | `server_error_handler.js` (navigation type) — network error OR `response.status() >= 500`. | Exponential backoff retry (`backoff.js`) with a hard cap; on success the workflow resumes from the current item (per-item loop, never a full restart). | Retry succeeds within cap; run continues and completes. | `events.jsonl` `scenario=server_errors` `detected`/`retry`; screenshot `server-error`; summary `retries`. | `tests/test_scenarios_week2.spec.js` (server_errors); also `tests/test_all_four.spec.js` |
+
+> **Combination coverage (Week 2 closeout):** `tests/test_all_four.spec.js` forces all four scenarios
+> on at once (`random_mode: false`, seeded) and runs the real workflow with a small `limit`. It asserts
+> a `PASS` verdict, `items_failed = 0`, all four scenarios detected, all three overlay scenarios
+> resolved, `server_errors` retries, and anomaly screenshots — evidence that the handlers compose
+> correctly, not just in isolation.
 
 ## Handled scenario details
 

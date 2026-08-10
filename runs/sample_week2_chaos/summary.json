@@ -1,0 +1,43 @@
+{
+  "run_id": "sample_week2_chaos",
+  "base_url": "http://localhost:5173",
+  "limit": 3,
+  "started_at": "2026-08-10T11:19:16.752Z",
+  "ended_at": "2026-08-10T11:19:35.826Z",
+  "duration_ms": 19074,
+  "items_requested": 3,
+  "items_processed": 3,
+  "items_failed": 0,
+  "data_validation": {
+    "total": 3,
+    "valid": 3,
+    "invalid": 0,
+    "duplicates": []
+  },
+  "disruptions": {
+    "cookie_banner": {
+      "detected": 1,
+      "resolved": 1,
+      "retries": 0
+    },
+    "newsletter_popup": {
+      "detected": 1,
+      "resolved": 1,
+      "retries": 0
+    },
+    "simulated_captcha": {
+      "detected": 1,
+      "resolved": 1,
+      "retries": 0
+    },
+    "server_errors": {
+      "detected": 2,
+      "resolved": 0,
+      "retries": 2
+    }
+  },
+  "retries_total": 2,
+  "screenshots": 5,
+  "verdict": "PASS",
+  "failure_reasons": []
+}

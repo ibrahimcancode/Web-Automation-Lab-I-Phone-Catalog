@@ -29,6 +29,18 @@
       "probability": 0.5,
       "min_delay_ms": 2500,
       "max_delay_ms": 5000
+    },
+    "unexpected_redirect": {
+      "enabled": false,
+      "probability": 0.5
+    },
+    "dom_drift": {
+      "enabled": false,
+      "probability": 0.5
+    },
+    "blocked_clicks": {
+      "enabled": false,
+      "probability": 0.5
     }
   }
 }

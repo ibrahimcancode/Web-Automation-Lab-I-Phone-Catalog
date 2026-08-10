@@ -8,6 +8,7 @@ import Catalog from './pages/Catalog';
 import ModelDetail from './pages/ModelDetail';
 import Compare from './pages/Compare';
 import Favorites from './pages/Favorites';
+import PromoPage from './pages/PromoPage';
 import NotFound from './pages/NotFound';
 import './App.css';
 
@@ -25,6 +26,7 @@ export default function App() {
                 <Route path="/model/:slug" element={<ModelDetail />} />
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/favorites" element={<Favorites />} />
+                <Route path="/promo" element={<PromoPage />} />
                 <Route path="/404" element={<NotFound />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

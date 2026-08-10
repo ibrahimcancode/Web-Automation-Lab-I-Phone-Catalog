@@ -32,6 +32,7 @@ export async function ensureHandlersLoaded() {
   await import('./captcha_handler.js');
   await import('./server_error_handler.js');
   await import('./slow_response_handler.js');
+  await import('./redirect_handler.js');
   handlersLoaded = true;
 }
 
@@ -39,7 +40,9 @@ export function registerHandler(handler) {
   if (!handler || !handler.name || typeof handler.detect !== 'function' || typeof handler.recover !== 'function') {
     throw new Error(`Invalid handler registration: ${JSON.stringify(handler?.name)}`);
   }
-  registry.push(handler);
+  if (!registry.some((h) => h.name === handler.name)) {
+    registry.push(handler);
+  }
   return handler;
 }
 

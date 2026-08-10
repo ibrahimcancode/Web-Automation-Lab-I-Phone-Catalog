@@ -2,7 +2,7 @@
 // Wraps the application and manages the lifecycle of all chaos scenarios
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { initialize, should_trigger, resetDecisionCache } from './engine.js';
 import { CookieBanner } from './handlers/CookieBanner.jsx';
 import { NewsletterPopup } from './handlers/NewsletterPopup.jsx';
@@ -16,20 +16,11 @@ import './chaos.css';
 // behavior is unchanged: the bundled chaos.json is used.
 import baseConfig from './chaos.json';
 
-const OVERRIDE_JSON = import.meta.env.VITE_CHAOS_JSON;
-let defaultConfig = baseConfig;
-if (OVERRIDE_JSON) {
-  try {
-    defaultConfig = JSON.parse(OVERRIDE_JSON);
-  } catch (err) {
-    console.error('[CHAOS] Invalid VITE_CHAOS_JSON override, using bundled config:', err);
-  }
-}
-
 export function ChaosProvider({ children }) {
   const [ready, setReady] = useState(false);
   const [cookieDismissed, setCookieDismissed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const initialized = useRef(false);
 
   // §10 #2: reset decision cache on navigation
@@ -37,18 +28,43 @@ export function ChaosProvider({ children }) {
     resetDecisionCache();
   }, [location.pathname, location.search]);
 
-  // Initialize engine once
+  // Initialize engine once with dynamic override resolution
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
+    let cfg = baseConfig;
+    const override =
+      typeof window !== 'undefined' && window.__CHAOS_CONFIG__
+        ? JSON.stringify(window.__CHAOS_CONFIG__)
+        : import.meta.env.VITE_CHAOS_JSON;
+    if (override) {
+      try {
+        cfg = typeof override === 'string' ? JSON.parse(override) : override;
+      } catch (err) {
+        console.error('[CHAOS] Invalid override, using baseConfig:', err);
+      }
+    }
+
     try {
-      initialize(defaultConfig);
+      initialize(cfg);
     } catch (err) {
       console.error('[CHAOS] Failed to initialize:', err);
     }
     setReady(true);
   }, []);
+
+  // Scenario 6: Unexpected redirects — intercept navigation and redirect to promo
+  useEffect(() => {
+    if (!ready) return;
+    const isPromo = location.pathname === '/promo';
+    const hasNoRedirect = location.search.includes('noredirect=1') || location.search.includes('dest=');
+    const trigger = should_trigger('unexpected_redirect');
+    if (!isPromo && !hasNoRedirect && trigger) {
+      const dest = encodeURIComponent(location.pathname + location.search);
+      navigate(`/promo?dest=${dest}`, { replace: true });
+    }
+  }, [location.pathname, location.search, ready, navigate]);
 
   const handleCookieComplete = useCallback(() => {
     setCookieDismissed(true);

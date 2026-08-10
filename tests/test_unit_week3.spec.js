@@ -50,7 +50,7 @@ test.describe('slow_responses handler', () => {
   test('is registered as a navigation handler', async () => {
     await ensureHandlersLoaded();
     expect(getHandlers().map((h) => h.name)).toContain('slow_responses');
-    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors', 'slow_responses']);
+    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors', 'slow_responses', 'unexpected_redirect']);
   });
 
   test('detect claims a slow-but-loaded response', () => {

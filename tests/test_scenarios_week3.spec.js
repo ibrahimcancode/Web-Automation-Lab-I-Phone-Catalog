@@ -58,3 +58,38 @@ test.describe('Scenario: slow_responses', () => {
     }
   });
 });
+
+test.describe('Scenario: unexpected_redirect', () => {
+  let site;
+  test.beforeAll(async () => {
+    site = await startSite(
+      configFor({ unexpected_redirect: { enabled: true, probability: 1.0 } }),
+      { port: 5227 },
+    );
+  });
+  test.afterAll(async () => site?.close());
+
+  test('bot detects wrong destination, returns to target, and passes with valid extraction', async () => {
+    const page = await (await import('../bot/browser.js')).createSession({ headless: true, baseUrl: site.baseUrl }).then((s) => s.page);
+    await page.goto(site.baseUrl + '/');
+    const windowConfig = await page.evaluate(() => window.__CHAOS_CONFIG__);
+    console.log('WINDOW CHAOS CONFIG IN BROWSER:', windowConfig);
+    const { summary, reporter } = await runBotOnce({ baseUrl: site.baseUrl, limit: 2 });
+    console.log('SUMMARY:', JSON.stringify(summary, null, 2));
+    console.log('EVENTS:', reporter.events);
+    expect(summary.verdict).toBe('PASS');
+    expect(summary.items_processed).toBeGreaterThan(0);
+    expect(summary.items_failed).toBe(0);
+    expect(summary.data_validation.invalid).toBe(0);
+    expect(summary.data_validation.duplicates.length).toBe(0);
+
+    const d = summary.disruptions.unexpected_redirect;
+    expect(d.detected).toBeGreaterThan(0);
+    expect(d.resolved).toBeGreaterThan(0);
+    expect(summary.screenshots).toBeGreaterThan(0);
+
+    const redirectEvents = reporter.events.filter((e) => e.scenario === 'unexpected_redirect');
+    expect(redirectEvents.some((e) => e.action === 'detected')).toBe(true);
+    expect(redirectEvents.some((e) => e.outcome === 'resolved')).toBe(true);
+  });
+});

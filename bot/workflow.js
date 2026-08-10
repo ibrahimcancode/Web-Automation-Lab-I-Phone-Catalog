@@ -185,12 +185,12 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
     let decision = null;
     let matchedName = null;
     for (const handler of navHandlers) {
-      let detected = false;
-      try {
-        detected = await handler.detect({ page, response, error, attempt, navigationMs });
-      } catch {
-        detected = false;
-      }
+let detected = false;
+    try {
+      detected = await handler.detect({ page, response, error, attempt, navigationMs, url });
+    } catch {
+      detected = false;
+    }
       if (!detected) continue;
       decision = await handler.recover({ page, response, error, attempt, url, navigationMs });
       matchedName = handler.name;

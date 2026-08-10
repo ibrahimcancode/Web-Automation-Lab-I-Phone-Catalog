@@ -76,7 +76,7 @@ test.describe('handler registry', () => {
     await ensureHandlersLoaded();
     await ensureHandlersLoaded(); // idempotent — must not double-register
     const names = getHandlers().map((h) => h.name).sort();
-    expect(names).toEqual(['cookie_banner', 'newsletter_popup', 'server_errors', 'simulated_captcha', 'slow_responses']);
+    expect(names).toEqual(['cookie_banner', 'newsletter_popup', 'server_errors', 'simulated_captcha', 'slow_responses', 'unexpected_redirect']);
   });
 
   test('overlay handlers are ordered by priority', async () => {
@@ -90,7 +90,7 @@ test.describe('handler registry', () => {
 
   test('navigation handlers are server_errors and slow_responses', async () => {
     await ensureHandlersLoaded();
-    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors', 'slow_responses']);
+    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors', 'slow_responses', 'unexpected_redirect']);
   });
 
   test('every handler exposes the contract', async () => {

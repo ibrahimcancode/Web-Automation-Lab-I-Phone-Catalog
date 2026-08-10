@@ -13,10 +13,7 @@ as the Resilient Web Automation Lab internship.
   extraction, structured run evidence, and working recovery handlers for the **4 scenarios** above.
   Coverage matrix: `docs/SCENARIOS.md`. Week 2 test results: 34/34 passing (unit + happy path +
   per-scenario + all-four combination).
-- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenario 5 (slow responses/timeouts) in progress**.
-  Sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification
-  (`bot/timeouts.js`) + a navigation handler (`bot/handlers/slow_response_handler.js`), a deterministic
-  scenario test, and a `site:slow` demo command. See `docs/SCENARIOS.md`.
+- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenarios 5 (slow responses/timeouts) and 6 (unexpected redirects) complete**. Sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification (`bot/timeouts.js`) + navigation handler (`bot/handlers/slow_response_handler.js`), a deterministic scenario test, and a `site:slow` demo command. Scenario 6 adds a sandbox `/promo` interstitial redirect with `dest` preservation, bot-side `redirect_handler.js` that detects the wrong destination and recovers via `noredirect=1`, and a deterministic scenario test. See `docs/SCENARIOS.md`.
 
 ## Repository layout
 

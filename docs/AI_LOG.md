@@ -119,6 +119,28 @@
   stable as the machine it runs on — worth flagging the 3s-fixed-delay quirk (deterministic mode skips
   the delay draw) as a known source of flake for the all-four tier.
 
+### Entry W3-3 — Scenario 6: unexpected redirects — fixing the handoff and closing the test
+- **Trying to do:** Complete the Week 3 Scenario 6 handoff from the previous agent (Antigravity), which
+  had partially implemented the sandbox redirect (ChaosProvider + PromoPage + config) and the bot-side
+  `redirect_handler.js`, but left the test failing.
+- **Tool/prompt:** opencode; phase-1 audit of the partial handoff (git status, diff, run targeted test).
+- **What I found:** Root cause was `bot/workflow.js` `navigateWithGuard` calling
+  `handler.detect({ page, response, error, attempt, navigationMs })` **without** the `url` parameter,
+  so `redirect_handler.detect` (which needs the intended destination URL to detect a wrong-page landing)
+  always received `undefined` and returned `false`. The browser *did* redirect to `/promo` (evidenced by
+  `cards=0` on the catalog page), but the bot never detected or recovered from it.
+- **What I fixed:** Added `url` to the `detect` context in `navigateWithGuard`. Removed a debug
+  `console.log`. Updated three unit tests (`test_unit_week2.spec.js` x2, `test_unit_week3.spec.js` x1)
+  to include the new `unexpected_redirect` handler in their expected handler lists (legitimate assertion
+  updates, not weakening). The Scenario 6 test now passes with `detected=4`, `resolved=4`,
+  `items_processed=2`, `items_failed=0`, valid extraction, and anomaly screenshots — exactly matching
+  the deterministic requirements (redirect detected → resolved → intended page reached → data valid →
+  no item failure → evidence created).
+- **What I learned:** Navigation handlers that need the intended URL must receive it from the guard — the
+  `url` is available in the outer loop but was omitted from the detect context. A single-line fix
+  unblocked the entire scenario. Also, config override debugging (extra browser page in the test) is
+  noisy and leaks resources; the test now runs clean with only `runBotOnce`.
+
 ---
 
 *(Add 2–3 entries per week going forward, per the brief's cadence.)*

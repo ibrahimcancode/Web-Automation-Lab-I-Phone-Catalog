@@ -81,6 +81,11 @@ export default function chaosSlowResponses() {
 
   return {
     name: 'chaos-slow-responses',
+    transformIndexHtml(html) {
+      const cfg = loadConfig();
+      if (!cfg) return html;
+      return html.replace('<head>', `<head><script>window.__CHAOS_CONFIG__ = ${JSON.stringify(cfg)};</script>`);
+    },
     configureServer(server) {
       syncConfig();
       server.middlewares.use((req, res, next) => {

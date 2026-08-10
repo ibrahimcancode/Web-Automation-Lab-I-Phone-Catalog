@@ -31,6 +31,7 @@ export async function ensureHandlersLoaded() {
   await import('./popup_handler.js');
   await import('./captcha_handler.js');
   await import('./server_error_handler.js');
+  await import('./slow_response_handler.js');
   handlersLoaded = true;
 }
 

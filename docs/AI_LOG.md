@@ -75,6 +75,50 @@
   "combination forced on" check is a genuinely different (and valuable) test than the per-scenario
   suite.
 
+### Entry W3-1 — Scenario 5: sandbox simulation + pure duration classification + navigation handler
+- **Trying to do:** Start Week 3 with Scenario 5 (slow responses / timeouts) — a genuine delayed
+  response the bot can observe and classify, without any fixed sleeps.
+- **Tool/prompt:** opencode, given the milestone brief (add `slow_responses` to the config, simulate a
+  delayed page/element response with a safe 2–5s cap, detect it specifically, recover by proceeding,
+  evidence + unit tests + one forced demo run).
+- **What it got right:** A client-side SPA can't be slow server-side, so I added a sibling Vite
+  middleware (`vite-chaos-slow.js`) that delays only HTML SPA navigations by `min_delay_ms`–`max_delay_ms`
+  (clamped to the safe 2–5s window; deterministic mode = exactly `min_delay_ms`). The bot side stays
+  additive: `navigateWithGuard` now measures each navigation attempt's duration and passes it to the
+  handlers, and `bot/timeouts.js` classifies it (`normal` / `slow` / `dead`) as a pure, unit-tested
+  function. The new `slow_response_handler.js` claims only "slow but loaded" navigations, records a
+  `resolved` recovery with the observed duration, and never retries — so the run continues and the
+  evidence still shows the disruption. Registered it in the existing lazy handler loader; added
+  `slow_responses` to `buildSummary`'s scenario list.
+- **What it got wrong / had to change:** The engine's existing 2–5s hard-cap clamp only covered the
+  singular `slow_response` key; I extended the condition to `slow_responses` so client-side config
+  validation matches the new scenario name. Also, the Week 2 unit test asserted "exactly four handlers"
+  and "navigation handlers are only server_errors" — both were updated to the new reality (five
+  handlers; two navigation handlers).
+- **What I learned:** Measuring duration around the existing `page.goto` is enough — no fixed sleeps,
+  and the handler gets real observed evidence (the `loaded in Nms` detail) that a test can assert
+  against the configured threshold.
+
+### Entry W3-2 — Scenario 5 test, full-suite verification, and a pre-existing all-four flake
+- **Trying to do:** Add a deterministic Scenario 5 scenario test (every page load delayed, bot must
+  detect + record + continue without hanging) and keep the entire 34-test suite green.
+- **Tool/prompt:** opencode; test mirrors the Week 2 scenario-tier pattern (`VITE_CHAOS_JSON` override,
+  `random_mode: false`, dedicated port).
+- **What it got right:** The Scenario 5 test boots the sandbox with a 2500–4000ms forced delay and
+  asserts `slow_responses.detected > 0`, `resolved > 0`, `retries == 0`, `screenshots > 0`, and that
+  every `recovered` event's `loaded in Nms` duration meets the configured threshold. The full suite
+  passes 46/46.
+- **What it got wrong / had to change:** The all-four combination test flaked twice on `newsletter_popup`
+  not being detected. I confirmed it is a **pre-existing, load-dependent race**, not a regression:
+  with `random_mode: false` the engine never draws `delay_seconds`, so the popup shows exactly 3s after
+  each page load, and the bot catches it only when the catalog's load-more clicks span that 3s window.
+  Both the baseline commit and my changes passed 3/3 in isolation; the flake only appeared under
+  heavier load. I left the Week 2 test and bot behavior untouched (per the "do not rewrite completed
+  Week 2" rule) and documented the timing race here instead.
+- **What I learned:** A test that asserts "this scenario happened" on a timing-coupled popup is only as
+  stable as the machine it runs on — worth flagging the 3s-fixed-delay quirk (deterministic mode skips
+  the delay draw) as a known source of flake for the all-four tier.
+
 ---
 
 *(Add 2–3 entries per week going forward, per the brief's cadence.)*

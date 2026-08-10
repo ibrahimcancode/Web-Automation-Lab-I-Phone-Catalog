@@ -71,7 +71,7 @@ Chosen workflow (MASTER_SPEC §4.3, Phase 2.1 — option a): *catalog extraction
 | 2 | Cookie / consent banner | 1 / 2 | Accept (fallback Reject), verify banner hidden |
 | 3 | Simulated captcha gate | 1 / 2 | Click checkbox, parse math question, submit answer; bounded retry |
 | 4 | Site down / server errors | 2 | Navigation guard: detect 5xx/network error, exponential backoff retry with hard cap, resume from current item |
-| 5 | Slow responses / timeouts | **3 (not started)** | Explicit waits that distinguish "slow but arriving" from "dead" |
+| 5 | Slow responses / timeouts | **3 (in progress)** | Navigation guard: classify load duration (pure `bot/timeouts.js`); on "slow but loaded" record the recovery in place — no retry, no repeated navigation |
 | 6 | Unexpected redirection | **3** | Verify URL/page identity post-navigation; route back |
 | 7 | DOM change / selector drift | **3** | Fallback-chain selectors instead of brittle CSS paths |
 | 8 | Blocked / intercepted clicks | **3** | Detect interception, remove obstruction or alternative action, verify effect |

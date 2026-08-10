@@ -13,7 +13,10 @@ as the Resilient Web Automation Lab internship.
   extraction, structured run evidence, and working recovery handlers for the **4 scenarios** above.
   Coverage matrix: `docs/SCENARIOS.md`. Week 2 test results: 34/34 passing (unit + happy path +
   per-scenario + all-four combination).
-- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **not started** (see `MASTER_SPEC (1).md`).
+- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenario 5 (slow responses/timeouts) in progress**.
+  Sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification
+  (`bot/timeouts.js`) + a navigation handler (`bot/handlers/slow_response_handler.js`), a deterministic
+  scenario test, and a `site:slow` demo command. See `docs/SCENARIOS.md`.
 
 ## Repository layout
 
@@ -31,6 +34,7 @@ bot/                   # Playwright automation bot (Week 2)
   reporting.js         #   JSON-lines events, anomaly screenshots, run summary
   selectors.js         #   all selectors centralized
   backoff.js           #   pure exponential-backoff calculator
+  timeouts.js          #   pure navigation-duration classification (Scenario 5)
   validate.js          #   pure extracted-data validation
 tests/                 # Playwright test tiers (unit / happy-path / scenarios)
 runs/                  # run evidence (gitignored; sample runs committed)
@@ -61,12 +65,18 @@ Start the sandbox (chaos on by default; uses the bundled `src/chaos/chaos.json`)
 npm run site          # chaos ON  (random_mode, seed 42)
 npm run site:off      # chaos OFF (happy path)
 npm run site:all      # all four Week 2 scenarios forced on deterministically (random_mode false, seed 42)
+npm run site:slow     # Scenario 5 forced on: every page load delayed 2500–4000ms (random_mode false, seed 42)
 ```
 
 `site:all` enables **cookie banner + newsletter popup + simulated captcha + server errors** with a
 fixed seed and `random_mode: false`, so every enabled scenario fires every time — the deterministic
 "all-four" environment the combination test and sample run use. (The sandbox server errors are
 driven by `fail_first_n: 2`, so exactly the first two navigations return a 503 and are retried.)
+
+`site:slow` enables **Scenario 5 (slow responses)** deterministically: the dev server delays the HTML
+response for every SPA navigation by the configured `min_delay_ms`–`max_delay_ms` window (clamped to a
+safe 2–5s). Run the bot against it with a small limit to watch it classify and record each slow load
+without retrying or hanging.
 
 Run the bot against it (default base URL `http://localhost:5173`):
 
@@ -86,7 +96,7 @@ disruption counts + pass/fail verdict).
 One documented command runs everything:
 
 ```bash
-npm test                # all Week 2 tiers: unit + happy path + scenarios + all-four
+npm test                # all tiers: unit (Week 2 + Week 3) + happy path + scenarios + all-four
 npm run test:unit       # pure unit tests only (fast, no browser/site)
 npm run test:happy      # happy path (chaos off)
 npm run test:scenarios  # one scenario forced on at a time

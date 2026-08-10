@@ -47,8 +47,8 @@ function validateConfig(config) {
       }
     }
 
-    // Hard cap for slow_response: delay must be strictly between 2000ms and 5000ms
-    if (name === 'slow_response') {
+    // Hard cap for slow_response(s): delay must be strictly between 2000ms and 5000ms
+    if (name === 'slow_response' || name === 'slow_responses') {
       const origMin = v.min_delay_ms;
       const origMax = v.max_delay_ms;
       v.min_delay_ms = Math.max(SLOW_RESPONSE_MIN_MS, Math.min(SLOW_RESPONSE_MAX_MS, v.min_delay_ms ?? SLOW_RESPONSE_MIN_MS));

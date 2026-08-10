@@ -72,11 +72,11 @@ test.describe('captcha question parser', () => {
 });
 
 test.describe('handler registry', () => {
-  test('loads all four Week 2 handlers exactly once', async () => {
+  test('loads all five Week 3 handlers exactly once', async () => {
     await ensureHandlersLoaded();
     await ensureHandlersLoaded(); // idempotent — must not double-register
     const names = getHandlers().map((h) => h.name).sort();
-    expect(names).toEqual(['cookie_banner', 'newsletter_popup', 'server_errors', 'simulated_captcha']);
+    expect(names).toEqual(['cookie_banner', 'newsletter_popup', 'server_errors', 'simulated_captcha', 'slow_responses']);
   });
 
   test('overlay handlers are ordered by priority', async () => {
@@ -88,9 +88,9 @@ test.describe('handler registry', () => {
     ]);
   });
 
-  test('navigation handlers are only server_errors', async () => {
+  test('navigation handlers are server_errors and slow_responses', async () => {
     await ensureHandlersLoaded();
-    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors']);
+    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors', 'slow_responses']);
   });
 
   test('every handler exposes the contract', async () => {

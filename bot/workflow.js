@@ -167,11 +167,15 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
     attempt += 1;
     let response = null;
     let error = null;
+    const navigationStartedAt = Date.now();
     try {
       response = await page.goto(url, { waitUntil: 'domcontentloaded' });
     } catch (err) {
       error = err;
     }
+    // Observed duration of the navigation, used by duration-based handlers
+    // (slow_responses) to classify "slow but loaded" vs. "dead".
+    const navigationMs = Date.now() - navigationStartedAt;
 
     if (navHandlers.length === 0) {
       if (error) throw error;
@@ -183,12 +187,12 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
     for (const handler of navHandlers) {
       let detected = false;
       try {
-        detected = await handler.detect({ page, response, error, attempt });
+        detected = await handler.detect({ page, response, error, attempt, navigationMs });
       } catch {
         detected = false;
       }
       if (!detected) continue;
-      decision = await handler.recover({ page, response, error, attempt, url });
+      decision = await handler.recover({ page, response, error, attempt, url, navigationMs });
       matchedName = handler.name;
       break;
     }
@@ -210,6 +214,17 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
     });
 
     if (!decision.retry) {
+      // Non-retry claim (e.g. slow but loaded): surface the recovery and keep
+      // the already-present response — no navigation is repeated.
+      await reporter.screenshot(page, `${matchedName}-detected`);
+      reporter.event({
+        scenario: matchedName,
+        action: 'recovered',
+        outcome: decision.outcome ?? 'resolved',
+        detail: decision.detail ?? null,
+        step: ctx?.step,
+        url,
+      });
       return response;
     }
 

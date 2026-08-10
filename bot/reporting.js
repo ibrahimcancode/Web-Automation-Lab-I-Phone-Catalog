@@ -66,7 +66,7 @@ export class Reporter {
 // so it is fully unit-testable.
 export function buildSummary({ events, results, runMeta, config = {} }) {
   const disruptions = {};
-  const scenarioNames = ['cookie_banner', 'newsletter_popup', 'simulated_captcha', 'server_errors'];
+  const scenarioNames = ['cookie_banner', 'newsletter_popup', 'simulated_captcha', 'server_errors', 'slow_responses'];
   for (const name of scenarioNames) {
     disruptions[name] = { detected: 0, resolved: 0, retries: 0 };
   }

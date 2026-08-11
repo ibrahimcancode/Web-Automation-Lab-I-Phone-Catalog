@@ -182,59 +182,73 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
       return response;
     }
 
-    let decision = null;
-    let matchedName = null;
+    let claimed = null;
+    let retryWaitMs = null;
     for (const handler of navHandlers) {
-let detected = false;
-    try {
-      detected = await handler.detect({ page, response, error, attempt, navigationMs, url });
-    } catch {
-      detected = false;
-    }
+      let detected = false;
+      try {
+        detected = await handler.detect({ page, response, error, attempt, navigationMs, url });
+      } catch {
+        detected = false;
+      }
       if (!detected) continue;
-      decision = await handler.recover({ page, response, error, attempt, url, navigationMs });
-      matchedName = handler.name;
-      break;
-    }
 
-    // No handler claimed this state.
-    if (decision === null) {
-      if (error) throw error;
-      return response;
-    }
+      let decision;
+      try {
+        decision = await handler.recover({ page, response, error, attempt, url, navigationMs });
+      } catch (err) {
+        decision = { outcome: 'error', detail: String(err) };
+      }
 
-    // A navigation handler claimed this state — record it as detected so the
-    // run summary reflects the disruption, not just the retry.
-    reporter.event({
-      scenario: matchedName,
-      action: 'detected',
-      outcome: 'detected',
-      step: ctx?.step,
-      url,
-    });
-
-    if (!decision.retry) {
-      // Non-retry claim (e.g. slow but loaded): surface the recovery and keep
-      // the already-present response — no navigation is repeated.
-      await reporter.screenshot(page, `${matchedName}-detected`);
+      // A navigation handler claimed this state — record it as detected so the
+      // run summary reflects the disruption, not just the retry.
       reporter.event({
-        scenario: matchedName,
+        scenario: handler.name,
+        action: 'detected',
+        outcome: 'detected',
+        step: ctx?.step,
+        url,
+      });
+      await reporter.screenshot(page, `${handler.name}-detected`);
+
+      if (decision.retry) {
+        retryWaitMs = decision.waitMs ?? nextRetryDelayMs(attempt);
+        reporter.event({
+          scenario: handler.name,
+          action: 'retry',
+          outcome: 'retrying',
+          detail: `attempt ${attempt}/${cap}`,
+          url,
+        });
+        if (attempt >= cap) {
+          throw new Error(`Navigation to ${url} failed after ${attempt} attempt(s)`);
+        }
+        break;
+      }
+
+      // Non-retry claim (e.g. slow but loaded): surface the recovery, but keep
+      // checking the remaining navigation handlers so a disruption that appears
+      // after a slow load (e.g. a late client-side redirect) is still caught.
+      claimed = claimed ?? { name: handler.name, decision };
+      reporter.event({
+        scenario: handler.name,
         action: 'recovered',
         outcome: decision.outcome ?? 'resolved',
         detail: decision.detail ?? null,
         step: ctx?.step,
         url,
       });
-      return response;
     }
 
-    const waitMs = decision.waitMs ?? nextRetryDelayMs(attempt);
-    reporter.event({ scenario: 'server_errors', action: 'retry', outcome: 'retrying', detail: `attempt ${attempt}/${cap}`, url });
-    await reporter.screenshot(page, 'server-error');
-    if (attempt >= cap) {
-      throw new Error(`Navigation to ${url} failed after ${attempt} attempt(s)`);
+    if (retryWaitMs !== null) {
+      await sleepMs(retryWaitMs);
+      continue;
     }
-    await sleepMs(waitMs);
+
+    // No retry needed. If a handler claimed a non-retry state the recovery was
+    // already surfaced; otherwise surface the raw error/navigation result.
+    if (!claimed && error) throw error;
+    return response;
   }
 }
 
@@ -253,7 +267,9 @@ function logFallback(reporter, key, failed, matched, step = null) {
 }
 
 async function waitForPageReady(page, pageSelectorKey, reporter) {
-  await waitForSelectorChain(page, pageSelectorKey, { state: 'visible' }, (key, failed, matched) => {
+  // Bounded headroom beyond the 3s default so handled slow responses
+  // (scenario delay up to 4000ms) don't trip the page-ready gate.
+  await waitForSelectorChain(page, pageSelectorKey, { state: 'visible', timeout: 10000 }, (key, failed, matched) => {
     logFallback(reporter, key, failed, matched, pageSelectorKey);
   });
 }
@@ -365,6 +381,47 @@ async function processItem({ page, baseUrl, href, catalogName, reporter, index }
   };
 }
 
+// Scenario 8: click a button, then VERIFY the click actually took effect by
+// waiting (bounded) for the observable state change. A blocked click — a
+// transparent overlay swallowing pointer events (the sandbox re-mounts it after
+// dismissal) — leaves state unchanged, so sweep the blocker and retry, bounded.
+// Never a fixed sleep.
+async function clickLoadMoreAndVerify({ page, ctx, reporter, loadMoreSelector, cardSelector, prevCount }) {
+  const VERIFY_TIMEOUT_MS = 8000;
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    await clickThroughObstacles(ctx, reporter, loadMoreSelector);
+    try {
+      await page.waitForFunction(
+        (args) => document.querySelectorAll(args.selector).length > args.prev,
+        { selector: cardSelector, prev: prevCount },
+        { timeout: VERIFY_TIMEOUT_MS },
+      );
+      return true;
+    } catch {
+      // The click did not take effect — a blocker intercepted it (Scenario 8)
+      // or a re-armed blocker reappeared mid-flow. Remove it and retry.
+      await quickSweep(ctx, reporter);
+      reporter.event({
+        scenario: 'blocked_clicks',
+        action: 'verify_retry',
+        outcome: 'retrying',
+        detail: `attempt ${attempt}/${MAX_ATTEMPTS}`,
+        step: ctx.step,
+      });
+    }
+  }
+  reporter.event({
+    scenario: 'blocked_clicks',
+    action: 'verify_failed',
+    outcome: 'failed',
+    detail: `card count did not grow after ${MAX_ATTEMPTS} attempts`,
+    step: ctx.step,
+  });
+  await reporter.screenshot(page, 'blocked-clicks-unresolved');
+  return false;
+}
+
 // Full workflow orchestration. Returns { results, summary }.
 export async function runWorkflow({ session, reporter, limit = null, startedAt }) {
   await ensureHandlersLoaded();
@@ -396,14 +453,19 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
     // A delayed overlay (e.g. the newsletter popup, which arms ~3s after the
     // cookie banner is dismissed) can land mid-flow and intercept the click —
     // click through any such overlay, bounded. Never a fixed sleep.
-    await clickThroughObstacles(catalogCtx, reporter, loadMoreSelector);
-    // Wait for the card count to increase. waitForFunction takes ONE arg:
-    // pass { selector, prev } as that single arg (a second positional would be
-    // read as options and the `prev` param would be undefined → never true).
-    await page.waitForFunction(
-      (args) => document.querySelectorAll(args.selector).length > args.prev,
-      { selector: cardSelector, prev: prevCount },
-    );
+    //
+    // Scenario 8: the click must actually take effect before we move on — the
+    // helper waits (bounded) for the card count to grow and re-sweeps + retries
+    // when a transparent blocker swallowed the click.
+    const grew = await clickLoadMoreAndVerify({
+      page,
+      ctx: catalogCtx,
+      reporter,
+      loadMoreSelector,
+      cardSelector,
+      prevCount,
+    });
+    if (!grew) break;
     prevCount = await page.$$eval(cardSelector, (els) => els.length);
     reporter.event({ scenario: 'workflow', action: 'load_more', outcome: 'ok', detail: `cards=${prevCount}` });
   }

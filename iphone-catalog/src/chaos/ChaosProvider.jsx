@@ -7,6 +7,7 @@ import { initialize, should_trigger, resetDecisionCache } from './engine.js';
 import { CookieBanner } from './handlers/CookieBanner.jsx';
 import { NewsletterPopup } from './handlers/NewsletterPopup.jsx';
 import { SimulatedCaptcha } from './handlers/SimulatedCaptcha.jsx';
+import { BlockedClicks } from './handlers/BlockedClicks.jsx';
 import { getDomDriftVariant } from './handlers/DomDrift.jsx';
 import './chaos.css';
 
@@ -89,6 +90,7 @@ export function ChaosProvider({ children }) {
   const showCookieBanner = should_trigger('cookie_banner');
   const showNewsletter = should_trigger('newsletter_popup');
   const showCaptcha = should_trigger('simulated_captcha');
+  const showBlockedClicks = should_trigger('blocked_clicks');
 
   return (
     <>
@@ -96,6 +98,7 @@ export function ChaosProvider({ children }) {
       {showCookieBanner && <CookieBanner onComplete={handleCookieComplete} />}
       {showNewsletter && <NewsletterPopup cookieDismissed={cookieDismissed} />}
       {showCaptcha && <SimulatedCaptcha />}
+      {showBlockedClicks && <BlockedClicks />}
     </>
   );
 }

@@ -7,6 +7,11 @@ import { test, expect } from '@playwright/test';
 import { startSite } from './helpers/site.js';
 import { runBotOnce } from './helpers/bot.js';
 
+// Scenario runs boot the real Vite sandbox and run the full workflow; give them
+// headroom so a loaded machine during the full-suite run doesn't trip the
+// Playwright default 60s test timeout.
+test.describe.configure({ timeout: 180_000 });
+
 function configFor(scenarios) {
   return {
     enabled: true,
@@ -122,5 +127,39 @@ test.describe('Scenario: dom_drift', () => {
     const driftEvents = reporter.events.filter((e) => e.scenario === 'dom_drift');
     expect(driftEvents.some((e) => e.action === 'detected')).toBe(true);
     expect(driftEvents.some((e) => e.outcome === 'resolved')).toBe(true);
+  });
+});
+
+test.describe('Scenario: blocked_clicks', () => {
+  let site;
+  test.beforeAll(async () => {
+    site = await startSite(
+      configFor({ blocked_clicks: { enabled: true, probability: 1.0, rearm_after_dismissal_ms: 1000 } }),
+      { port: 5229 },
+    );
+  });
+  test.afterAll(async () => site?.close());
+
+  test('bot detects the intercepted click, removes the blocker, verifies the click took effect, and passes', async () => {
+    const { summary, reporter } = await runBotOnce({ baseUrl: site.baseUrl, limit: 2 });
+    console.log('SUMMARY:', JSON.stringify(summary, null, 2));
+    console.log('EVENTS:', reporter.events);
+    expect(summary.verdict).toBe('PASS');
+    expect(summary.items_processed).toBeGreaterThan(0);
+    expect(summary.items_failed).toBe(0);
+    expect(summary.data_validation.invalid).toBe(0);
+    expect(summary.data_validation.duplicates.length).toBe(0);
+
+    const d = summary.disruptions.blocked_clicks;
+    expect(d.detected).toBeGreaterThan(0);
+    expect(d.resolved).toBeGreaterThan(0);
+    expect(summary.screenshots).toBeGreaterThan(0);
+
+    const clickEvents = reporter.events.filter((e) => e.scenario === 'blocked_clicks');
+    expect(clickEvents.some((e) => e.action === 'detected')).toBe(true);
+    expect(clickEvents.some((e) => e.outcome === 'resolved')).toBe(true);
+    // The click must have been verified to take effect (load-more grew cards).
+    const loadMoreEvents = reporter.events.filter((e) => e.scenario === 'workflow' && e.action === 'load_more');
+    expect(loadMoreEvents.length).toBeGreaterThan(0);
   });
 });

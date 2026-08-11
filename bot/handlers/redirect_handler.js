@@ -8,6 +8,7 @@ import { registerHandler } from './index.js';
 const handler = {
   name: 'unexpected_redirect',
   type: 'navigation',
+  priority: 300,
 
   async detect(ctx) {
     const { page, url } = ctx;
@@ -21,9 +22,12 @@ const handler = {
         return true;
       }
 
-      // Wait up to 1500ms if client-side React router is processing the redirect
+      // Wait for a client-side router redirect. Under a slow response the page
+      // mounts late, so give a slow navigation a wider window to surface it.
+      const slowLoadMs = 2000;
+      const redirectWindow = ctx.navigationMs > slowLoadMs ? 6500 : 1500;
       try {
-        await page.waitForURL((u) => u.pathname === '/promo' || (u.pathname !== targetPath && !u.href.includes(targetPath)), { timeout: 1500 });
+        await page.waitForURL((u) => u.pathname === '/promo' || (u.pathname !== targetPath && !u.href.includes(targetPath)), { timeout: redirectWindow });
         currentUrl = page.url();
         currentPath = new URL(currentUrl).pathname;
         if (currentPath === '/promo' || (currentPath !== targetPath && !currentUrl.includes(targetPath))) {

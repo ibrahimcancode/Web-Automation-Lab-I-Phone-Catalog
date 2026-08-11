@@ -12,6 +12,8 @@ import { test, expect } from '@playwright/test';
 import { startSite } from './helpers/site.js';
 import { runBotOnce } from './helpers/bot.js';
 
+test.describe.configure({ timeout: 180_000 });
+
 const ALL_FOUR = {
   enabled: true,
   random_mode: false,

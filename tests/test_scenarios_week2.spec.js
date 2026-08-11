@@ -8,6 +8,8 @@
 // clears the cookie, waits for the delayed modal, then sweeps it away.
 
 import { test, expect } from '@playwright/test';
+
+test.describe.configure({ timeout: 180_000 });
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

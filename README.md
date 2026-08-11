@@ -13,7 +13,7 @@ as the Resilient Web Automation Lab internship.
   extraction, structured run evidence, and working recovery handlers for the **4 scenarios** above.
   Coverage matrix: `docs/SCENARIOS.md`. Week 2 test results: 34/34 passing (unit + happy path +
   per-scenario + all-four combination).
-- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenarios 5 (slow responses/timeouts), 6 (unexpected redirects), and 7 (DOM/selector drift) complete**. Scenario 5 adds sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification (`bot/timeouts.js`) + navigation handler (`bot/handlers/slow_response_handler.js`), and a deterministic scenario test (`site:slow`). Scenario 6 adds a sandbox `/promo` interstitial redirect with `dest` preservation, bot-side `redirect_handler.js` that detects the wrong destination and recovers via `noredirect=1`, and a deterministic scenario test. Scenario 7 adds sandbox alternate DOM variants (`document.body.dataset.chaosDomDrift`), fallback selector chains in `bot/selectors.js`, and `bot/handlers/dom_drift_handler.js` — every logical selector resolves through its chain (bounded per-attempt waits) and each fallback use is logged as `dom_drift` `fallback_used` evidence (`site:drift`). See `docs/SCENARIOS.md`.
+- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenarios 5 (slow responses/timeouts), 6 (unexpected redirects), 7 (DOM/selector drift), and 8 (blocked/intercepted clicks) complete**. Scenario 5 adds sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification (`bot/timeouts.js`) + navigation handler (`bot/handlers/slow_response_handler.js`), and a deterministic scenario test (`site:slow`). Scenario 6 adds a sandbox `/promo` interstitial redirect with `dest` preservation, bot-side `redirect_handler.js` that detects the wrong destination and recovers via `noredirect=1`, and a deterministic scenario test. Scenario 7 adds sandbox alternate DOM variants (`document.body.dataset.chaosDomDrift`), fallback selector chains in `bot/selectors.js`, and `bot/handlers/dom_drift_handler.js` — every logical selector resolves through its chain (bounded per-attempt waits) and each fallback use is logged as `dom_drift` `fallback_used` evidence (`site:drift`). Scenario 8 adds an invisible pointer-blocking overlay (`BlockedClicks.jsx`) over the load-more button plus `bot/handlers/blocked_clicks_handler.js` (rect-overlap detection, removal, then a bounded **verify-the-click-took-effect** check) (`site:blocked`). The **all-eight chaos gauntlet** (`tests/test_gauntlet.spec.js`) runs the real workflow in random mode with all 8 scenarios enabled and two fixed seeds, asserting a complete and correct result with per-seed recovery evidence. See `docs/SCENARIOS.md`.
 
 ## Repository layout
 
@@ -64,6 +64,7 @@ npm run site:off      # chaos OFF (happy path)
 npm run site:all      # all four Week 2 scenarios forced on deterministically (random_mode false, seed 42)
 npm run site:slow     # Scenario 5 forced on: every page load delayed 2500–4000ms (random_mode false, seed 42)
 npm run site:drift    # Scenario 7 forced on: every page renders alternate DOM class names (random_mode false, seed 42)
+npm run site:blocked  # Scenario 8 forced on: invisible overlay blocks "Load more" clicks, re-arms after dismissal (random_mode false, seed 42)
 ```
 
 `site:all` enables **cookie banner + newsletter popup + simulated captcha + server errors** with a
@@ -80,6 +81,11 @@ without retrying or hanging.
 session with an alternate DOM variant (`alt1`/`alt2`) and every page renders different class names /
 structure for the same logical content. Run the bot against it to watch its fallback selector chains
 resolve every element and log each `fallback_used` drift event.
+
+`site:blocked` enables **Scenario 8 (blocked/intercepted clicks)** deterministically: an invisible
+overlay blocks the catalog's "Load more" button, and it re-arms `rearm_after_dismissal_ms` after the
+bot removes it. Run the bot against it to watch it detect the blocker, remove it, and **verify the
+click took effect** (bounded card-count growth check) before moving on.
 
 Run the bot against it (default base URL `http://localhost:5173`):
 
@@ -99,16 +105,20 @@ disruption counts + pass/fail verdict).
 One documented command runs everything:
 
 ```bash
-npm test                # all tiers: unit (Week 2 + Week 3) + happy path + scenarios + all-four
+npm test                # all tiers: unit (Week 2 + Week 3) + happy path + scenarios + all-eight gauntlet
 npm run test:unit       # pure unit tests only (fast, no browser/site)
 npm run test:happy      # happy path (chaos off)
 npm run test:scenarios  # one scenario forced on at a time
 ```
 
 The scenario tests boot the real Vite sandbox with a per-test `VITE_CHAOS_JSON` override, so the
-committed `chaos.json` is never mutated. `tests/test_all_four.spec.js` is the combination tier: it
-forces all four scenarios on at once (`random_mode: false`, seed 42) and asserts one run still passes
-with every disruption detected and recovered.
+committed `chaos.json` is never mutated. `tests/test_all_four.spec.js` forces all four Week 2
+scenarios on at once (`random_mode: false`, seed 42) and asserts one run still passes with every
+disruption detected and recovered. `tests/test_gauntlet.spec.js` is the all-eight chaos gauntlet:
+**random mode**, all 8 scenarios enabled, fixed seeds (42 and 99), asserting a complete and correct
+run (`PASS`, zero failures, no invalid/duplicate data) plus per-seed recovery evidence — including
+seed 99, where cookie banner, unexpected redirects, DOM drift, and blocked clicks all fire in a
+single overlapping run and are all handled.
 
 ## Known limitations
 

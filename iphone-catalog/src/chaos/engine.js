@@ -40,6 +40,8 @@ function validateConfig(config) {
     if (scenario.min_delay_seconds != null) v.min_delay_seconds = Math.max(0, scenario.min_delay_seconds);
     if (scenario.max_delay_seconds != null) v.max_delay_seconds = Math.max(0, scenario.max_delay_seconds);
     if (scenario.min_delay_ms != null) v.min_delay_ms = Math.max(0, scenario.min_delay_ms);
+    if (scenario.rearm_after_dismissal_ms != null) v.rearm_after_dismissal_ms = Math.max(0, scenario.rearm_after_dismissal_ms);
+    if (scenario.cover_selector != null) v.cover_selector = String(scenario.cover_selector);
     if (scenario.max_delay_ms != null) {
       v.max_delay_ms = clamp(Math.max(0, scenario.max_delay_ms), 0, SAFETY_CAP_MS);
       if (scenario.max_delay_ms > SAFETY_CAP_MS) {

@@ -1,6 +1,6 @@
 # Scenario Coverage Matrix
 
-Status as of **Week 3 (Scenarios 5–7 complete, 8 in progress)**. This matrix lists only scenarios the bot actually detects and
+Status as of **Week 3 (Scenarios 5–8 complete + all-eight chaos gauntlet)**. This matrix lists only scenarios the bot actually detects and
 recovers from — no aspirational entries (per MASTER_SPEC §4.12). New scenarios are added as they are
 implemented.
 
@@ -24,12 +24,21 @@ implemented.
 | 5 | Slow responses / timeouts | Vite middleware (`vite-chaos-slow.js`) delays the HTML response for SPA navigations by `min_delay_ms`–`max_delay_ms`, clamped to the safe 2–5s window (deterministic mode = exactly `min_delay_ms`). | `slow_response_handler.js` (navigation type) — `classifyNavigationDuration()` (`timeouts.js`) reports "slow" when the navigation completed in ≥ the slow threshold (1.5s) but before the deadline. | No retry — the page is already usable. The disruption is classified and recorded in place, so the run continues while the evidence still shows it happened. | Observed duration in the `recovered` event detail (`loaded in Nms`) must meet the configured threshold. | `events.jsonl` `scenario=slow_responses` `detected`/`recovered`; screenshot `slow_responses-detected`; summary counts. | `tests/test_scenarios_week3.spec.js` |
 | 6 | Unexpected redirection | `ChaosProvider` intercepts navigation and redirects to a local `/promo` interstitial with `dest` preserving the intended URL; probability=1, deterministic (`random_mode: false`). | `redirect_handler.js` (navigation type) — after `page.goto`, waits for URL to become `/promo` (or any unintended destination) within a bounded window. | Navigate back to intended URL with `noredirect=1` query param (suppresses sandbox redirect), wait for the target page's selector (`.catalog-grid .product-card` / `.page-detail` / `.page-home`). | Intended page selector visible; no infinite redirect loop. | `events.jsonl` `scenario=unexpected_redirect` `detected`/`recovered`; screenshot `unexpected_redirect-detected`; summary counts `detected`/`resolved`. | `tests/test_scenarios_week3.spec.js` (unexpected_redirect) |
 | 7 | DOM / selector drift | `ChaosProvider` sets `document.body.dataset.chaosDomDrift` to an alternate variant (`alt1`/`alt2`) once per session; each page renders meaningfully different class names/structure (same logical content) for that variant. | `dom_drift_handler.js` (overlay type) — `findFirstMatchingSelector()` (non-blocking `page.$`) proves "primary selector fails, a fallback matches" on the page keys (`catalog.page`, `catalog.card`, `catalog.loadMore`, `detail.page`, …). | No DOM rewriting: every workflow lookup resolves through the fallback chains in `selectors.js` (`waitForSelectorChain`, `getSelectorChain` + comma-joined `$$eval`/`click`, `extractDetail`), and each fallback use is logged as `fallback_used`. | Extraction matches the alternate DOM; `data_validation.invalid = 0`; `dom_drift.detected`/`resolved` > 0 in the summary. | `events.jsonl` `scenario=dom_drift` `detected`/`recovered` + `fallback_used` events naming the failed primary(s) and matched fallback; screenshot; summary counts. | `tests/test_scenarios_week3.spec.js` (dom_drift) |
+| 8 | Blocked / intercepted clicks | `BlockedClicks.jsx` mounts an invisible, pointer-intercepting overlay (`.chaos-click-blocker`, z-index 9990) over the "Load more" button chain via `cover_selector`; it is imperatively positioned (rAF + scroll/resize watcher, 250ms fallback), re-mounts `rearm_after_dismissal_ms` after being removed, and is toggled per-navigation by `should_trigger('blocked_clicks')`. | `blocked_clicks_handler.js` (overlay type) — `rectOverlapWithSelector()` proves a blocker element overlaps the needed button (rect-overlap, works below the fold where `elementFromPoint` returns null). | Remove all blocker elements, then **verify the click took effect** (`clickLoadMoreAndVerify()` in `workflow.js`: bounded 8s `waitForFunction` on the card-count growing, 3 attempts). On final failure: `verify_failed` event + `blocked-clicks-unresolved` screenshot. | Card count grows after the click through the obstacle; `data_validation.invalid = 0`. | `events.jsonl` `scenario=blocked_clicks` `detected`/`recovered`; `verify_retry`/`verify_failed`; screenshot `blocked_clicks-detected`; summary counts. | `tests/test_scenarios_week3.spec.js` (blocked_clicks) |
 
 > **Combination coverage (Week 2 closeout):** `tests/test_all_four.spec.js` forces all four scenarios
 > on at once (`random_mode: false`, seeded) and runs the real workflow with a small `limit`. It asserts
 > a `PASS` verdict, `items_failed = 0`, all four scenarios detected, all three overlay scenarios
 > resolved, `server_errors` retries, and anomaly screenshots — evidence that the handlers compose
 > correctly, not just in isolation.
+>
+> **All-eight chaos gauntlet (Week 3):** `tests/test_gauntlet.spec.js` runs the real workflow in
+> **random mode** (`seed 42` and `seed 99`, verified to activate a deterministic subset per seed)
+> with all 8 scenarios enabled. It asserts a `PASS` verdict, `items_failed = 0`, zero invalid data,
+> no duplicates, and per-seed recovery evidence — seed 42 proves bounded `server_errors` retries plus
+> `unexpected_redirect` recovery even when the redirect fires behind a slow load; seed 99 proves
+> `cookie_banner`, `unexpected_redirect`, `dom_drift`, and `blocked_clicks` are all detected **and**
+> resolved in a single overlapping run. Both runs are re-runnable deterministically.
 
 ## Handled scenario details
 
@@ -61,6 +70,11 @@ slow-responses handler. The run summary aggregates per-scenario `detected` /
   actual fallback use is logged as a `dom_drift` `fallback_used` event naming the failed primary(s)
   and the matched fallback. Chain attempts are bounded (3s each) so a missing primary fails fast
   instead of burning Playwright's 30s default.
+- **Blocked clicks**: the sandbox's invisible click blocker is removed by the handler, but removal
+  alone is not success — the workflow then **verifies the intended click took effect** by waiting
+  (bounded, 8s) for the catalog card count to grow, with up to 3 attempts. This is the §5.3
+  "recover → safe alternative → verify" pattern: a click that never lands is retried and, only on
+  final failure, recorded as a `verify_failed` with an evidence screenshot.
 - **Overlapping disruptions**: interactive steps are overlay-aware (`clickThroughObstacles()` in
   `workflow.js`) — if a late-arriving overlay intercepts a click mid-action, it is re-swept and the
   action retried, bounded. This keeps a combination of scenarios from crashing the run (verified by
@@ -68,5 +82,6 @@ slow-responses handler. The run summary aggregates per-scenario `detected` /
 
 ## Not yet handled
 
-Scenario 8 (blocked/intercepted clicks) is still **Week 3** work — it will be added here only once the
-sandbox simulation and bot handler exist and pass their tests.
+None — all eight planned scenarios (1–8) are handled and covered by automated tests. The
+all-eight chaos gauntlet (`tests/test_gauntlet.spec.js`) keeps the combination honest under random
+mode.

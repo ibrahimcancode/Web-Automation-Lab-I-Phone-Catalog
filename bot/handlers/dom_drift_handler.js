@@ -25,9 +25,12 @@ const DRIFT_KEYS = [
   'detail.priceValue',
 ];
 
-// Track whether drift was already detected in this session. The alternate DOM is
-// permanent for the session, so re-detecting it on every page would loop forever.
-let driftDetected = false;
+// Track whether drift was already detected for the current page/session. The
+// alternate DOM is permanent for the session, so re-detecting it on every page
+// would loop forever. Keyed to the Page object (not a module global) so state
+// resets when a run starts a fresh browser/context instead of leaking across
+// runs in the same process.
+const driftDetected = new WeakSet();
 let driftDetail = null;
 
 const handler = {
@@ -37,7 +40,7 @@ const handler = {
 
   async detect(ctx) {
     const { page } = ctx;
-    if (!page || driftDetected) return false;
+    if (!page || driftDetected.has(page)) return false;
 
     for (const key of DRIFT_KEYS) {
       const chain = getSelectorChain(key);
@@ -48,7 +51,7 @@ const handler = {
       // the alternate DOM and a fallback is in use → drift.
       const matched = await findFirstMatchingSelector(page, key);
       if (matched && matched.usedFallback) {
-        driftDetected = true;
+        driftDetected.add(page);
         driftDetail = {
           key,
           primary: chain[0],
@@ -61,7 +64,7 @@ const handler = {
   },
 
   async recover(ctx) {
-    if (!driftDetected || !driftDetail) {
+    if (!driftDetected.has(ctx.page) || !driftDetail) {
       return { outcome: 'resolved', detail: 'no drift detected on recheck' };
     }
     const detail = `selector drift: ${driftDetail.key} (primary: ${driftDetail.primary}) → fallback: ${driftDetail.fallback}`;

@@ -15,6 +15,7 @@ import {
 } from '../bot/handlers/index.js';
 import slowResponseHandler from '../bot/handlers/slow_response_handler.js';
 import domDriftHandler from '../bot/handlers/dom_drift_handler.js';
+import blockedClicksHandler from '../bot/handlers/blocked_clicks_handler.js';
 import { getSelector, getSelectorChain } from '../bot/selectors.js';
 import { buildSummary } from '../bot/reporting.js';
 
@@ -162,5 +163,48 @@ test.describe('dom_drift handler (Scenario 7)', () => {
       runMeta: { run_id: 'test-run' },
     });
     expect(summary.disruptions.dom_drift).toEqual({ detected: 1, resolved: 2, retries: 0 });
+  });
+});
+
+test.describe('blocked_clicks handler (Scenario 8)', () => {
+  test('is registered as an overlay handler', async () => {
+    await ensureHandlersLoaded();
+    expect(getHandlers().map((h) => h.name)).toContain('blocked_clicks');
+    expect(blockedClicksHandler.type).toBe('overlay');
+  });
+
+  test('detect reports no blocker when the page has no load-more button', async () => {
+    const page = {
+      evaluate: async () => false,
+    };
+    expect(await blockedClicksHandler.detect({ page })).toBe(false);
+  });
+
+  test('recover resolves with the number of removed blockers', async () => {
+    const page = { evaluate: async () => 2 };
+    const rec = await blockedClicksHandler.recover({ page });
+    expect(rec.outcome).toBe('resolved');
+    expect(rec.detail).toMatch(/removed 2 click blocker/);
+    expect(rec.retry).toBe(true);
+  });
+
+  test('recover resolves with zero when nothing is blocked', async () => {
+    const page = { evaluate: async () => 0 };
+    const rec = await blockedClicksHandler.recover({ page });
+    expect(rec.outcome).toBe('resolved');
+    expect(rec.detail).toMatch(/removed 0 click blocker/);
+  });
+
+  test('buildSummary counts blocked_clicks detected/resolved evidence', () => {
+    const summary = buildSummary({
+      events: [
+        { scenario: 'blocked_clicks', action: 'detected', outcome: 'detected' },
+        { scenario: 'blocked_clicks', action: 'recovered', outcome: 'resolved', detail: 'removed 1 click blocker(s)' },
+        { scenario: 'workflow', action: 'load_more', outcome: 'ok' },
+      ],
+      results: [validItem()],
+      runMeta: { run_id: 'test-run' },
+    });
+    expect(summary.disruptions.blocked_clicks).toEqual({ detected: 1, resolved: 1, retries: 0 });
   });
 });

@@ -34,6 +34,7 @@ export async function ensureHandlersLoaded() {
   await import('./slow_response_handler.js');
   await import('./redirect_handler.js');
   await import('./dom_drift_handler.js');
+  await import('./blocked_clicks_handler.js');
   handlersLoaded = true;
 }
 
@@ -54,7 +55,9 @@ export function getOverlayHandlers() {
 }
 
 export function getNavigationHandlers() {
-  return registry.filter((h) => h.type === 'navigation');
+  return registry
+    .filter((h) => h.type === 'navigation')
+    .sort((a, b) => a.priority - b.priority);
 }
 
 export function getHandlers() {

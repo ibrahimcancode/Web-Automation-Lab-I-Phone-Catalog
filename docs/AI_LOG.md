@@ -172,6 +172,44 @@
   `dom_drift.detected/resolved>0`, `fallback_used` events naming the failed primary(s), and anomaly
   screenshots. Full suite: 54/54 (unit + happy path + scenarios 1–7 + all-four).
 
+### Entry W3-5 — Scenario 8: blocked clicks + the all-eight chaos gauntlet
+- **Trying to do:** Close out Week 3: Scenario 8 (blocked/intercepted clicks) end-to-end, then the
+  §5 Phase 3.4 "chaos gauntlet" — the real workflow in **random mode**, all 8 scenarios enabled,
+  fixed seeds, asserting a complete and correct result.
+- **Tool/prompt:** opencode; handoff stated "random mode with a fixed seed, re-runnable
+  deterministically" — drive it green with two seeds and deterministic per-seed assertions.
+- **What I changed:** (1) Sandbox: `BlockedClicks.jsx` mounts an invisible pointer-blocking overlay
+  (`.chaos-click-blocker`, z-index 9990) over the load-more selector chain; positioned imperatively
+  (rAF + scroll/resize + 250ms watcher — React state re-renders lagged and `elementFromPoint`
+  returns null below the fold), re-arms `rearm_after_dismissal_ms` after removal; wired in
+  `ChaosProvider`; `engine.js` validates the new config keys. (2) Bot: `blocked_clicks_handler.js`
+  (overlay, priority 350) detects via rect-overlap and removes blockers; `workflow.js` gained
+  `clickLoadMoreAndVerify()` (bounded 8s `waitForFunction` on card-count growth, 3 attempts,
+  `verify_failed` screenshot on final failure) so the load-more loop **verifies the click took
+  effect**. (3) Gauntlet: `tests/test_gauntlet.spec.js`, seeds 42 + 99, asserting `PASS`, zero
+  failures, no invalid/duplicate data, and per-seed recovery evidence.
+- **What it got wrong / had to change:** (a) A regression: the nav-handler unit test failed because
+  `getNavigationHandlers()` returned registration (import-evaluation) order, not priority order —
+  `redirect_handler.js` had no `priority` and nav handlers weren't sorted. Fixed by adding
+  `priority: 300` and sorting by priority. (b) **The gauntlet caught a real handler-interaction bug
+  my first seed-42 simulation missed:** delay pre-draws shift the PRNG sequence, so the actual
+  nav-1 activations are `newsletter_popup`, `server_errors`, `unexpected_redirect` (not the
+  naïvely-computed set). `navigateWithGuard` `break`s after the first *non-retry* claim, so
+  `slow_responses` (detected by raw duration on the 4.7s load) returned before `unexpected_redirect`
+  ever ran — the late client-side redirect to `/promo` slipped through and the run stalled on a
+  blank page. Fixed by continuing the nav-handler loop past non-retry claims and giving the
+  redirect handler a wider window (6.5s) on slow loads. (c) The default 60s Playwright test timeout
+  was too small for a ~1.5m gauntlet run — raised per-test to 240s.
+- **What I learned:** PRNG decision sets must be simulated *with* the interleaved delay pre-draws
+  (active scenarios consume extra draws, shifting every later roll); and a "recovered" slow load can
+  still be mid-mount — the navigation guard needs a second pass over the remaining handlers so
+  late-appearing disruptions aren't masked by an earlier non-retry recovery.
+- **Deterministic proof:** Scenario 8 forced-on test (`port 5229`) passes; unit suite 22/22
+  (week 3); full suite 60/60 including the gauntlet — seed 42 (server-error retries +
+  redirect-behind-slow-load recovery) and seed 99 (`cookie_banner`, `unexpected_redirect`,
+  `dom_drift`, `blocked_clicks` all detected **and** resolved in one overlapping run), each with
+  `verdict=PASS`, `items_failed=0`, `invalid=0`, no duplicates.
+
 ---
 
 *(Add 2–3 entries per week going forward, per the brief's cadence.)*

@@ -8,7 +8,7 @@
 // bounded retry backoff used by the navigation guard. Everything else is an
 // explicit Playwright wait.
 
-import { selectors } from './selectors.js';
+import { getSelectorChain, waitForSelectorChain } from './selectors.js';
 import { getOverlayHandlers, getNavigationHandlers, ensureHandlersLoaded } from './handlers/index.js';
 import { buildSummary, writeResults, writeRunSummary } from './reporting.js';
 import { maxRetries, nextRetryDelayMs } from './backoff.js';
@@ -238,28 +238,57 @@ let detected = false;
   }
 }
 
-async function waitForPageReady(page, pageSelector) {
-  await page.waitForSelector(pageSelector, { state: 'visible' });
+// Log a selector-chain fallback (Scenario 7 DOM drift). Records the logical
+// element, the failed primary selector(s), and the successful fallback selector.
+// This runs in Node context — only the resolved selector strings are logged.
+function logFallback(reporter, key, failed, matched, step = null) {
+  if (!reporter) return;
+  reporter.event({
+    scenario: 'dom_drift',
+    action: 'fallback_used',
+    outcome: 'resolved',
+    detail: `${key}: primary(s) [${failed.join(', ')}] failed → fallback [${matched}]`,
+    step,
+  });
+}
+
+async function waitForPageReady(page, pageSelectorKey, reporter) {
+  await waitForSelectorChain(page, pageSelectorKey, { state: 'visible' }, (key, failed, matched) => {
+    logFallback(reporter, key, failed, matched, pageSelectorKey);
+  });
 }
 
 // Extract detail fields for one item from its detail page.
-async function extractDetail(page, id) {
-  const text = async (selector) => {
-    try {
-      return (await page.textContent(selector)).trim();
-    } catch {
-      return '';
+async function extractDetail(page, id, reporter) {
+  // Bounded wait per chain attempt. Under DOM drift the primary selector does
+  // not exist and textContent's 30s default would stall each extraction.
+  const ATTEMPT_MS = 3000;
+  const text = async (selectorKey) => {
+    const chain = getSelectorChain(selectorKey);
+    for (let i = 0; i < chain.length; i += 1) {
+      try {
+        const val = (await page.textContent(chain[i], { timeout: ATTEMPT_MS })).trim();
+        if (i > 0) logFallback(reporter, selectorKey, chain.slice(0, i), chain[i]);
+        return val;
+      } catch {
+        // try next selector in the chain
+      }
     }
+    return '';
   };
 
-  const name = await text(selectors.detail.title);
-  const tier = await text(selectors.detail.tier);
-  const yearText = await text(selectors.detail.year);
-  const priceText = await text(selectors.detail.priceValue);
-  const color = await text(selectors.detail.colorLabel);
-  const storageTexts = await page.$$eval(selectors.detail.storageOptions, (els) =>
-    els.map((e) => e.textContent.trim()),
-  );
+  // Run the text extractions in parallel so the per-attempt timeout is paid
+  // once, not once per field (5 × 3s would stall every detail page under drift).
+  const [name, tier, yearText, priceText, color, storageTexts] = await Promise.all([
+    text('detail.title'),
+    text('detail.tier'),
+    text('detail.year'),
+    text('detail.priceValue'),
+    text('detail.colorLabel'),
+    page.$$eval(getSelectorChain('detail.storageOptions').join(','), (els) =>
+      els.map((e) => e.textContent.trim()),
+    ),
+  ]);
   const storageGBs = storageTexts
     .map((t) => t.replace(/[^0-9]/g, ''))
     .filter(Boolean)
@@ -288,9 +317,9 @@ async function processItem({ page, baseUrl, href, catalogName, reporter, index }
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       await navigateWithGuard(page, href, ctx, reporter);
-      await waitForPageReady(page, selectors.detail.page);
+      await waitForPageReady(page, 'detail.page', reporter);
       await clearObstacles(ctx, reporter);
-      const data = await extractDetail(page, id);
+      const data = await extractDetail(page, id, reporter);
 
       const item = {
         id,
@@ -344,7 +373,7 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
   // Step 1 — home page (first action: spend a bounded window for a delayed popup).
   const homeCtx = { page, step: 'home' };
   await navigateWithGuard(page, `${baseUrl}/`, homeCtx, reporter);
-  await waitForPageReady(page, '.page-home');
+  await waitForPageReady(page, 'home.page', reporter);
   await clearObstacles(homeCtx, reporter, { waitMs: FIRST_ACTION_OBSTACLE_WAIT_MS });
   reporter.event({ scenario: 'workflow', action: 'visited_home', outcome: 'ok' });
   console.log('[bot] home page ready');
@@ -353,34 +382,41 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
   // Step 2 — catalog page.
   const catalogCtx = { page, step: 'catalog' };
   await navigateWithGuard(page, `${baseUrl}/catalog`, catalogCtx, reporter);
-  await waitForPageReady(page, selectors.catalog.page);
+  await waitForPageReady(page, 'catalog.page', reporter);
   await clearObstacles(catalogCtx, reporter);
   reporter.event({ scenario: 'workflow', action: 'visited_catalog', outcome: 'ok' });
   console.log('[bot] catalog page ready');
   await demoPause();
 
   // Step 3 — reveal all items via "Load more".
-  let prevCount = await page.$$eval(selectors.catalog.card, (els) => els.length);
-  while (await isVisible(page, selectors.catalog.loadMore)) {
+  const cardSelector = getSelectorChain('catalog.card').join(',');
+  const loadMoreSelector = getSelectorChain('catalog.loadMore').join(',');
+  let prevCount = await page.$$eval(cardSelector, (els) => els.length);
+  while (await isVisible(page, loadMoreSelector)) {
     // A delayed overlay (e.g. the newsletter popup, which arms ~3s after the
     // cookie banner is dismissed) can land mid-flow and intercept the click —
     // click through any such overlay, bounded. Never a fixed sleep.
-    await clickThroughObstacles(catalogCtx, reporter, selectors.catalog.loadMore);
+    await clickThroughObstacles(catalogCtx, reporter, loadMoreSelector);
+    // Wait for the card count to increase. waitForFunction takes ONE arg:
+    // pass { selector, prev } as that single arg (a second positional would be
+    // read as options and the `prev` param would be undefined → never true).
     await page.waitForFunction(
-      (prev) => document.querySelectorAll('.catalog-grid .product-card').length > prev,
-      prevCount,
+      (args) => document.querySelectorAll(args.selector).length > args.prev,
+      { selector: cardSelector, prev: prevCount },
     );
-    prevCount = await page.$$eval(selectors.catalog.card, (els) => els.length);
+    prevCount = await page.$$eval(cardSelector, (els) => els.length);
     reporter.event({ scenario: 'workflow', action: 'load_more', outcome: 'ok', detail: `cards=${prevCount}` });
   }
-  const cardCount = await page.$$eval(selectors.catalog.card, (els) => els.length);
+  const cardCount = await page.$$eval(cardSelector, (els) => els.length);
   reporter.event({ scenario: 'workflow', action: 'catalog_loaded', outcome: 'ok', detail: `cards=${cardCount}` });
 
   // Step 4 — collect card links + names.
-  const cards = await page.$$eval(`${selectors.catalog.cardLink}`, (els) =>
+  const cardLinkSelector = getSelectorChain('catalog.cardLink').join(',');
+  const cardNameSelector = getSelectorChain('catalog.cardName').join(',');
+  const cards = await page.$$eval(cardLinkSelector, (els) =>
     els.map((a) => ({ href: a.getAttribute('href') })),
   );
-  const names = await page.$$eval(selectors.catalog.cardName, (els) => els.map((e) => e.textContent.trim()));
+  const names = await page.$$eval(cardNameSelector, (els) => els.map((e) => e.textContent.trim()));
   const cardMap = new Map();
   cards.forEach((c, i) => {
     const href = c.href.startsWith('http') ? c.href : `${baseUrl}${c.href}`;

@@ -33,6 +33,7 @@ export async function ensureHandlersLoaded() {
   await import('./server_error_handler.js');
   await import('./slow_response_handler.js');
   await import('./redirect_handler.js');
+  await import('./dom_drift_handler.js');
   handlersLoaded = true;
 }
 

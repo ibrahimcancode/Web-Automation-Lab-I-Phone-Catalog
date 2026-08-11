@@ -14,6 +14,8 @@ import {
   getNavigationHandlers,
 } from '../bot/handlers/index.js';
 import slowResponseHandler from '../bot/handlers/slow_response_handler.js';
+import domDriftHandler from '../bot/handlers/dom_drift_handler.js';
+import { getSelector, getSelectorChain } from '../bot/selectors.js';
 import { buildSummary } from '../bot/reporting.js';
 
 test.describe('classifyNavigationDuration', () => {
@@ -106,5 +108,59 @@ test.describe('buildSummary (slow_responses)', () => {
     expect(summary.disruptions.server_errors).toEqual({ detected: 1, resolved: 0, retries: 1 });
     expect(summary.retries_total).toBe(1);
     expect(summary.verdict).toBe('PASS');
+  });
+});
+
+test.describe('selector fallback chains (Scenario 7)', () => {
+  test('getSelector returns the primary selector for chain keys (backward compat)', () => {
+    expect(getSelector('catalog.card')).toBe('.catalog-grid .product-card');
+    expect(getSelector('catalog.loadMore')).toBe('.catalog-grid button.load-more');
+    expect(getSelector('detail.title')).toBe('.page-detail .detail-header h1');
+    expect(getSelector('home.page')).toBe('.page-home');
+    expect(getSelector('chaos.popup.input')).toBe('#newsletter-popup .chaos-popup-input');
+  });
+
+  test('getSelectorChain returns the full ordered chain for drift-aware keys', () => {
+    expect(getSelectorChain('catalog.card')).toEqual([
+      '.catalog-grid .product-card',
+      '.catalog-grid-alt1 .product-card-alt1',
+      '.product-list.alt2 .product-item.alt2',
+    ]);
+    expect(getSelectorChain('catalog.page')).toEqual([
+      '.page-catalog',
+      '.page-catalog-alt1',
+      '.page-catalog-alt2',
+    ]);
+  });
+
+  test('getSelectorChain treats plain string leaves as single-selector chains', () => {
+    expect(getSelectorChain('chaos.popup.input')).toEqual(['#newsletter-popup .chaos-popup-input']);
+    expect(getSelectorChain('nope.missing')).toEqual([]);
+  });
+});
+
+test.describe('dom_drift handler (Scenario 7)', () => {
+  test('is registered as an overlay handler', async () => {
+    await ensureHandlersLoaded();
+    expect(getHandlers().map((h) => h.name)).toContain('dom_drift');
+    expect(domDriftHandler.type).toBe('overlay');
+  });
+
+  test('recover reports resolved when no drift is currently detected', async () => {
+    const rec = await domDriftHandler.recover({});
+    expect(rec.outcome).toBe('resolved');
+  });
+
+  test('buildSummary counts dom_drift fallback evidence as resolved', () => {
+    const summary = buildSummary({
+      events: [
+        { scenario: 'dom_drift', action: 'detected', outcome: 'detected' },
+        { scenario: 'dom_drift', action: 'fallback_used', outcome: 'resolved', detail: 'catalog.card: primary(s) [...] failed → fallback [...]' },
+        { scenario: 'dom_drift', action: 'recovered', outcome: 'resolved', detail: 'selector drift: catalog.card' },
+      ],
+      results: [validItem()],
+      runMeta: { run_id: 'test-run' },
+    });
+    expect(summary.disruptions.dom_drift).toEqual({ detected: 1, resolved: 2, retries: 0 });
   });
 });

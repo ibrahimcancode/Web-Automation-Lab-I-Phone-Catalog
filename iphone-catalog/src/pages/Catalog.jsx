@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { searchModels, filterModels, sortModels, getAllModels } from '../data/models';
 import { useStore } from '../state/useStore';
+import { getCurrentDomDriftVariant } from '../chaos/handlers/DomDrift.jsx';
 
 const BATCH_SIZE = 12;
 
@@ -14,11 +15,34 @@ const ALL_SORTS = [
   { value: 'alpha', label: 'Alphabetical' },
 ];
 
+// DOM drift variants render meaningfully different classes/structure so the
+// bot's primary selectors genuinely fail and its fallback chains are exercised.
+// The logical product content (links, names, prices) is unchanged.
+function variantClasses(domVariant) {
+  const isAlt1 = domVariant === 'alt1';
+  const isAlt2 = domVariant === 'alt2';
+  return {
+    page: isAlt1 ? 'page-catalog-alt1 container' : isAlt2 ? 'page-catalog-alt2 container' : 'page-catalog container',
+    main: isAlt1 ? 'catalog-grid-alt1' : isAlt2 ? 'product-list alt2' : 'catalog-grid',
+    card: isAlt1 ? 'product-card-alt1' : isAlt2 ? 'product-item alt2' : 'product-card',
+    cardLink: isAlt1 ? 'card-link-alt1' : isAlt2 ? 'item-link' : 'card-link',
+    cardName: isAlt1 ? 'card-name-alt1' : isAlt2 ? 'item-title alt2' : 'card-name',
+    grid: isAlt1 ? 'card-grid-alt1' : isAlt2 ? 'product-grid-alt2' : 'card-grid',
+    loadMore: isAlt1 ? 'btn btn-secondary load-more-alt1' : isAlt2 ? 'btn btn-secondary load-more alt2' : 'btn btn-secondary load-more',
+    emptyState: isAlt1 ? 'empty-state-alt1' : isAlt2 ? 'empty-state-alt2' : 'empty-state',
+  };
+}
+
 export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [showFilters, setShowFilters] = useState(false);
+  const [domVariant, setDomVariant] = useState('primary');
+
+  useEffect(() => {
+    setDomVariant(getCurrentDomDriftVariant());
+  }, []);
 
   const query = searchParams.get('q') || '';
   const sort = searchParams.get('sort') || 'newest';
@@ -82,8 +106,11 @@ export default function Catalog() {
     return `$${min.toLocaleString()}`;
   };
 
+  const cls = variantClasses(domVariant);
+  const isAlt2 = domVariant === 'alt2';
+
   return (
-    <div className="page-catalog container">
+    <div className={cls.page}>
       <div className="catalog-header">
         <h1>Catalog</h1>
         <span className="result-count">{filtered.length} model{filtered.length !== 1 ? 's' : ''}</span>
@@ -170,9 +197,9 @@ export default function Catalog() {
           )}
         </aside>
 
-        <main className="catalog-grid">
+        <main className={cls.main} data-variant={domVariant}>
           {visible.length === 0 ? (
-            <div className="empty-state">
+            <div className={cls.emptyState}>
               <h3>No models match these filters</h3>
               <p>Try adjusting your search or filters.</p>
               <button className="btn btn-primary" onClick={() => {
@@ -184,10 +211,10 @@ export default function Catalog() {
             </div>
           ) : (
             <>
-              <div className="card-grid">
+              <div className={cls.grid}>
                 {visible.map((model) => (
-                  <div key={model.id} className="product-card">
-                    <a href={`/model/${model.id}`} className="card-link">
+                  <div key={model.id} className={cls.card} data-id={model.id}>
+                    <a href={`/model/${model.id}`} className={cls.cardLink}>
                       <div className="card-image">
                         <img
                           src={model.heroImage}
@@ -203,7 +230,7 @@ export default function Catalog() {
                         <span className="tier-badge">{model.tier}</span>
                         <span className="card-year">{model.generationYear}</span>
                       </div>
-                      <h3 className="card-name">
+                      <h3 className={cls.cardName}>
                         <a href={`/model/${model.id}`}>{model.displayName}</a>
                       </h3>
                       <p className="card-price">From {formatPrice(model)}</p>
@@ -237,7 +264,7 @@ export default function Catalog() {
                 ))}
               </div>
               {hasMore && (
-                <button className="btn btn-secondary load-more" onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}>
+                <button className={cls.loadMore} onClick={() => setVisibleCount((c) => c + BATCH_SIZE)}>
                   Load more ({filtered.length - visibleCount} remaining)
                 </button>
               )}

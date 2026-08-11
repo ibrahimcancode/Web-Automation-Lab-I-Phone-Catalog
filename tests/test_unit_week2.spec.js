@@ -76,7 +76,7 @@ test.describe('handler registry', () => {
     await ensureHandlersLoaded();
     await ensureHandlersLoaded(); // idempotent — must not double-register
     const names = getHandlers().map((h) => h.name).sort();
-    expect(names).toEqual(['cookie_banner', 'newsletter_popup', 'server_errors', 'simulated_captcha', 'slow_responses', 'unexpected_redirect']);
+    expect(names).toEqual(['cookie_banner', 'dom_drift', 'newsletter_popup', 'server_errors', 'simulated_captcha', 'slow_responses', 'unexpected_redirect']);
   });
 
   test('overlay handlers are ordered by priority', async () => {
@@ -85,6 +85,7 @@ test.describe('handler registry', () => {
       'cookie_banner',
       'newsletter_popup',
       'simulated_captcha',
+      'dom_drift',
     ]);
   });
 

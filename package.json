@@ -8,6 +8,7 @@
     "site": "npm.cmd --prefix iphone-catalog run dev",
     "site:off": "set VITE_CHAOS_JSON={\"enabled\":false,\"random_mode\":false,\"seed\":42,\"scenarios\":{}}&&npm.cmd --prefix iphone-catalog run dev",
     "site:slow": "set VITE_CHAOS_JSON={\"enabled\":true,\"random_mode\":false,\"seed\":42,\"scenarios\":{\"slow_responses\":{\"enabled\":true,\"probability\":1.0,\"min_delay_ms\":2500,\"max_delay_ms\":4000}}}&&npm.cmd --prefix iphone-catalog run dev",
+    "site:drift": "set VITE_CHAOS_JSON={\"enabled\":true,\"random_mode\":false,\"seed\":42,\"scenarios\":{\"dom_drift\":{\"enabled\":true,\"probability\":1.0}}}&&npm.cmd --prefix iphone-catalog run dev",
     "site:all": "set VITE_CHAOS_JSON={\"enabled\":true,\"random_mode\":false,\"seed\":42,\"scenarios\":{\"cookie_banner\":{\"enabled\":true,\"probability\":1.0},\"newsletter_popup\":{\"enabled\":true,\"probability\":1.0,\"min_delay_seconds\":2,\"max_delay_seconds\":6},\"simulated_captcha\":{\"enabled\":true,\"probability\":1.0,\"delay_seconds\":1},\"server_errors\":{\"enabled\":true,\"probability\":1.0,\"status_code\":503,\"fail_first_n\":2}}}&&npm.cmd --prefix iphone-catalog run dev",
     "bot": "node bot/run.js",
     "bot:demo": "node bot/run.js --headed --limit 3",

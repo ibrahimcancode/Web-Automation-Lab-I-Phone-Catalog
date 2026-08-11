@@ -7,6 +7,7 @@ import { initialize, should_trigger, resetDecisionCache } from './engine.js';
 import { CookieBanner } from './handlers/CookieBanner.jsx';
 import { NewsletterPopup } from './handlers/NewsletterPopup.jsx';
 import { SimulatedCaptcha } from './handlers/SimulatedCaptcha.jsx';
+import { getDomDriftVariant } from './handlers/DomDrift.jsx';
 import './chaos.css';
 
 // Default config — loaded from chaos.json, but an explicit VITE_CHAOS_JSON
@@ -69,6 +70,19 @@ export function ChaosProvider({ children }) {
   const handleCookieComplete = useCallback(() => {
     setCookieDismissed(true);
   }, []);
+
+  // When ready, compute which scenarios are active for this navigation. The
+  // dom_drift variant is applied to document.body during render — before page
+  // components render — so pages read the alternate DOM on their first render.
+  let showDomDrift = false;
+  if (ready) {
+    showDomDrift = should_trigger('dom_drift');
+    if (showDomDrift) {
+      document.body.dataset.chaosDomDrift = getDomDriftVariant();
+    } else if (document.body.dataset.chaosDomDrift) {
+      delete document.body.dataset.chaosDomDrift;
+    }
+  }
 
   if (!ready) return null;
 

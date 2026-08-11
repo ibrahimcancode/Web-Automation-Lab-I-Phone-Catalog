@@ -93,3 +93,34 @@ test.describe('Scenario: unexpected_redirect', () => {
     expect(redirectEvents.some((e) => e.outcome === 'resolved')).toBe(true);
   });
 });
+
+test.describe('Scenario: dom_drift', () => {
+  let site;
+  test.beforeAll(async () => {
+    site = await startSite(
+      configFor({ dom_drift: { enabled: true, probability: 1.0 } }),
+      { port: 5228 },
+    );
+  });
+  test.afterAll(async () => site?.close());
+
+  test('bot detects DOM drift via fallback selectors and passes with valid extraction', async () => {
+    const { summary, reporter } = await runBotOnce({ baseUrl: site.baseUrl, limit: 2 });
+    console.log('SUMMARY:', JSON.stringify(summary, null, 2));
+    console.log('EVENTS:', reporter.events);
+    expect(summary.verdict).toBe('PASS');
+    expect(summary.items_processed).toBeGreaterThan(0);
+    expect(summary.items_failed).toBe(0);
+    expect(summary.data_validation.invalid).toBe(0);
+    expect(summary.data_validation.duplicates.length).toBe(0);
+
+    const d = summary.disruptions.dom_drift;
+    expect(d.detected).toBeGreaterThan(0);
+    expect(d.resolved).toBeGreaterThan(0);
+    expect(summary.screenshots).toBeGreaterThan(0);
+
+    const driftEvents = reporter.events.filter((e) => e.scenario === 'dom_drift');
+    expect(driftEvents.some((e) => e.action === 'detected')).toBe(true);
+    expect(driftEvents.some((e) => e.outcome === 'resolved')).toBe(true);
+  });
+});

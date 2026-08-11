@@ -141,6 +141,37 @@
   unblocked the entire scenario. Also, config override debugging (extra browser page in the test) is
   noisy and leaks resources; the test now runs clean with only `runBotOnce`.
 
+### Entry W3-4 — Scenario 7: DOM / selector drift — fallback chains, bounded attempts, and the waitForFunction arg trap
+- **Trying to do:** Complete the Week 3 Scenario 7 handoff: sandbox-side alternate DOM variants
+  (`alt1`/`alt2` class names per page, set via `document.body.dataset.chaosDomDrift` before pages
+  render) and bot-side recovery through fallback selector chains, with deterministic evidence.
+- **Tool/prompt:** opencode; phase-1 audit of the partial handoff, then implement + verify.
+- **What I changed:** (1) `DomDrift.jsx` now picks a *non-primary* variant deterministically (before,
+  it could pick `primary`, which is indistinguishable from no drift) and exposes
+  `getCurrentDomDriftVariant()`; `ChaosProvider` sets the body dataset during render so every page
+  reads the same variant. (2) `Catalog`/`ModelDetail`/`Home` render meaningfully different classes
+  per variant. (3) `selectors.js` became fallback chains (`getSelector` stays backward-compatible as
+  the primary; `getSelectorChain`, `waitForSelectorChain`, `findFirstMatchingSelector` added) with a
+  3s per-attempt bound so a missing primary fails fast instead of burning Playwright's 30s default.
+  (4) `dom_drift_handler.js` detects once per session via cheap `page.$` probes. (5) `workflow.js`
+  threads `reporter` into `waitForPageReady`/`extractDetail` so every fallback use is logged as a
+  `dom_drift` `fallback_used` event.
+- **What it got wrong / had to change:** Two real stalls surfaced while driving the forced-drift test
+  green: (a) `page.waitForFunction(fn, selector, prev)` — the **second positional argument is read as
+  `options`, not a second function argument**, so `prev` was `undefined` and `N > undefined` is always
+  false → every Load More wait timed out (and the happy path flaked the same way). Fixed by passing a
+  single `{ selector, prev }` object. (b) `extractDetail` called `text()` sequentially, each paying the
+  3s primary-timeout under drift (5 fields ≈ 15s/page) — parallelized with `Promise.all` so the cost is
+  paid once. Also learned the read/git tool outputs in this session could be stale/garbled, so I
+  verified file state via `node --check` and `Get-Content` line dumps before trusting a diff.
+- **What I learned:** Bounded per-attempt timeouts are what make fallback chains fast; and
+  `waitForFunction`'s `(fn, arg, options)` signature silently misroutes extra positionals, which is
+  worth a unit-level check on any `waitForFunction` with two inputs.
+- **Deterministic proof (forced `dom_drift`, `random_mode: false`):** Scenario 7 test passes with
+  `verdict=PASS`, `items_processed>0`, `items_failed=0`, `data_validation.invalid=0`,
+  `dom_drift.detected/resolved>0`, `fallback_used` events naming the failed primary(s), and anomaly
+  screenshots. Full suite: 54/54 (unit + happy path + scenarios 1–7 + all-four).
+
 ---
 
 *(Add 2–3 entries per week going forward, per the brief's cadence.)*

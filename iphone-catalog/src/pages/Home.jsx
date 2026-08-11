@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { getModelBySlug } from '../data/models';
+import { getCurrentDomDriftVariant } from '../chaos/handlers/DomDrift.jsx';
+import { useState, useEffect } from 'react';
 
 const FEATURED_SLUGS = ['iphone-17-pro-max', 'iphone-x', 'iphone-se-3rd-gen'];
 
@@ -15,14 +17,22 @@ const tierColors = {
 
 export default function Home() {
   const featured = FEATURED_SLUGS.map(getModelBySlug).filter(Boolean);
+  const [domVariant, setDomVariant] = useState('primary');
+
+  useEffect(() => {
+    setDomVariant(getCurrentDomDriftVariant());
+  }, []);
 
   const formatPrice = (model) => {
     const min = Math.min(...model.variants.map((v) => v.launchPriceUSD));
     return `$${min.toLocaleString()}`;
   };
 
+  const isAlt1 = domVariant === 'alt1';
+  const isAlt2 = domVariant === 'alt2';
+
   return (
-    <div className="page-home">
+    <div className={isAlt1 ? 'page-home-alt1' : isAlt2 ? 'page-home-alt2' : 'page-home'}>
       <section className="hero">
         <div className="container">
           <h1>The Complete iPhone Lineup</h1>
@@ -45,7 +55,7 @@ export default function Home() {
       <section className="featured container">
         <h2>Featured Models</h2>
         <p className="section-sub">Explore iconic and current flagship iPhones.</p>
-        <div className="placeholder-grid">
+        <div className={isAlt2 ? 'placeholder-grid-alt2' : isAlt1 ? 'placeholder-grid-alt1' : 'placeholder-grid'}>
           {featured.map((model) => (
             <Link key={model.id} to={`/model/${model.id}`} className="product-card featured-card">
               <div className="card-image">

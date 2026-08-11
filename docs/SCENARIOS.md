@@ -1,6 +1,6 @@
 # Scenario Coverage Matrix
 
-Status as of **Week 3 (Scenario 5 in progress)**. This matrix lists only scenarios the bot actually detects and
+Status as of **Week 3 (Scenarios 5–7 complete, 8 in progress)**. This matrix lists only scenarios the bot actually detects and
 recovers from — no aspirational entries (per MASTER_SPEC §4.12). New scenarios are added as they are
 implemented.
 
@@ -23,6 +23,7 @@ implemented.
 | 4 | Site down / server errors | Vite middleware (`vite-chaos-server.js`) returns a genuine 503 for HTML navigations (`fail_first_n` deterministic or probability-based). | `server_error_handler.js` (navigation type) — network error OR `response.status() >= 500`. | Exponential backoff retry (`backoff.js`) with a hard cap; on success the workflow resumes from the current item (per-item loop, never a full restart). | Retry succeeds within cap; run continues and completes. | `events.jsonl` `scenario=server_errors` `detected`/`retry`; screenshot `server-error`; summary `retries`. | `tests/test_scenarios_week2.spec.js` (server_errors); also `tests/test_all_four.spec.js` |
 | 5 | Slow responses / timeouts | Vite middleware (`vite-chaos-slow.js`) delays the HTML response for SPA navigations by `min_delay_ms`–`max_delay_ms`, clamped to the safe 2–5s window (deterministic mode = exactly `min_delay_ms`). | `slow_response_handler.js` (navigation type) — `classifyNavigationDuration()` (`timeouts.js`) reports "slow" when the navigation completed in ≥ the slow threshold (1.5s) but before the deadline. | No retry — the page is already usable. The disruption is classified and recorded in place, so the run continues while the evidence still shows it happened. | Observed duration in the `recovered` event detail (`loaded in Nms`) must meet the configured threshold. | `events.jsonl` `scenario=slow_responses` `detected`/`recovered`; screenshot `slow_responses-detected`; summary counts. | `tests/test_scenarios_week3.spec.js` |
 | 6 | Unexpected redirection | `ChaosProvider` intercepts navigation and redirects to a local `/promo` interstitial with `dest` preserving the intended URL; probability=1, deterministic (`random_mode: false`). | `redirect_handler.js` (navigation type) — after `page.goto`, waits for URL to become `/promo` (or any unintended destination) within a bounded window. | Navigate back to intended URL with `noredirect=1` query param (suppresses sandbox redirect), wait for the target page's selector (`.catalog-grid .product-card` / `.page-detail` / `.page-home`). | Intended page selector visible; no infinite redirect loop. | `events.jsonl` `scenario=unexpected_redirect` `detected`/`recovered`; screenshot `unexpected_redirect-detected`; summary counts `detected`/`resolved`. | `tests/test_scenarios_week3.spec.js` (unexpected_redirect) |
+| 7 | DOM / selector drift | `ChaosProvider` sets `document.body.dataset.chaosDomDrift` to an alternate variant (`alt1`/`alt2`) once per session; each page renders meaningfully different class names/structure (same logical content) for that variant. | `dom_drift_handler.js` (overlay type) — `findFirstMatchingSelector()` (non-blocking `page.$`) proves "primary selector fails, a fallback matches" on the page keys (`catalog.page`, `catalog.card`, `catalog.loadMore`, `detail.page`, …). | No DOM rewriting: every workflow lookup resolves through the fallback chains in `selectors.js` (`waitForSelectorChain`, `getSelectorChain` + comma-joined `$$eval`/`click`, `extractDetail`), and each fallback use is logged as `fallback_used`. | Extraction matches the alternate DOM; `data_validation.invalid = 0`; `dom_drift.detected`/`resolved` > 0 in the summary. | `events.jsonl` `scenario=dom_drift` `detected`/`recovered` + `fallback_used` events naming the failed primary(s) and matched fallback; screenshot; summary counts. | `tests/test_scenarios_week3.spec.js` (dom_drift) |
 
 > **Combination coverage (Week 2 closeout):** `tests/test_all_four.spec.js` forces all four scenarios
 > on at once (`random_mode: false`, seeded) and runs the real workflow with a small `limit`. It asserts
@@ -54,6 +55,12 @@ slow-responses handler. The run summary aggregates per-scenario `detected` /
   measured per navigation attempt in `navigateWithGuard` (`workflow.js`), classified by the pure
   `classifyNavigationDuration()` (`timeouts.js`, unit-tested), and recorded as a `resolved` recovery
   with the duration in the event detail.
+- **DOM drift**: the sandbox's alternate DOM never gets rewritten back — the bot recovers by
+  resolving every logical selector through its fallback chain (`selectors.js`). The drift handler
+  detects it once per session (cheap `page.$` probes, so the obstacle sweep stays fast), and every
+  actual fallback use is logged as a `dom_drift` `fallback_used` event naming the failed primary(s)
+  and the matched fallback. Chain attempts are bounded (3s each) so a missing primary fails fast
+  instead of burning Playwright's 30s default.
 - **Overlapping disruptions**: interactive steps are overlay-aware (`clickThroughObstacles()` in
   `workflow.js`) — if a late-arriving overlay intercepts a click mid-action, it is re-swept and the
   action retried, bounded. This keeps a combination of scenarios from crashing the run (verified by
@@ -61,6 +68,5 @@ slow-responses handler. The run summary aggregates per-scenario `detected` /
 
 ## Not yet handled
 
-Scenarios 7–8 (DOM/selector drift, blocked/intercepted clicks) are still
-**Week 3** work — they will be added here only once the sandbox simulation and bot handlers
-exist and pass their tests.
+Scenario 8 (blocked/intercepted clicks) is still **Week 3** work — it will be added here only once the
+sandbox simulation and bot handler exist and pass their tests.

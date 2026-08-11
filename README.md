@@ -13,7 +13,7 @@ as the Resilient Web Automation Lab internship.
   extraction, structured run evidence, and working recovery handlers for the **4 scenarios** above.
   Coverage matrix: `docs/SCENARIOS.md`. Week 2 test results: 34/34 passing (unit + happy path +
   per-scenario + all-four combination).
-- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenarios 5 (slow responses/timeouts) and 6 (unexpected redirects) complete**. Sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification (`bot/timeouts.js`) + navigation handler (`bot/handlers/slow_response_handler.js`), a deterministic scenario test, and a `site:slow` demo command. Scenario 6 adds a sandbox `/promo` interstitial redirect with `dest` preservation, bot-side `redirect_handler.js` that detects the wrong destination and recovers via `noredirect=1`, and a deterministic scenario test. See `docs/SCENARIOS.md`.
+- **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenarios 5 (slow responses/timeouts), 6 (unexpected redirects), and 7 (DOM/selector drift) complete**. Scenario 5 adds sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification (`bot/timeouts.js`) + navigation handler (`bot/handlers/slow_response_handler.js`), and a deterministic scenario test (`site:slow`). Scenario 6 adds a sandbox `/promo` interstitial redirect with `dest` preservation, bot-side `redirect_handler.js` that detects the wrong destination and recovers via `noredirect=1`, and a deterministic scenario test. Scenario 7 adds sandbox alternate DOM variants (`document.body.dataset.chaosDomDrift`), fallback selector chains in `bot/selectors.js`, and `bot/handlers/dom_drift_handler.js` — every logical selector resolves through its chain (bounded per-attempt waits) and each fallback use is logged as `dom_drift` `fallback_used` evidence (`site:drift`). See `docs/SCENARIOS.md`.
 
 ## Repository layout
 
@@ -63,6 +63,7 @@ npm run site          # chaos ON  (random_mode, seed 42)
 npm run site:off      # chaos OFF (happy path)
 npm run site:all      # all four Week 2 scenarios forced on deterministically (random_mode false, seed 42)
 npm run site:slow     # Scenario 5 forced on: every page load delayed 2500–4000ms (random_mode false, seed 42)
+npm run site:drift    # Scenario 7 forced on: every page renders alternate DOM class names (random_mode false, seed 42)
 ```
 
 `site:all` enables **cookie banner + newsletter popup + simulated captcha + server errors** with a
@@ -74,6 +75,11 @@ driven by `fail_first_n: 2`, so exactly the first two navigations return a 503 a
 response for every SPA navigation by the configured `min_delay_ms`–`max_delay_ms` window (clamped to a
 safe 2–5s). Run the bot against it with a small limit to watch it classify and record each slow load
 without retrying or hanging.
+
+`site:drift` enables **Scenario 7 (DOM / selector drift)** deterministically: the sandbox tags the
+session with an alternate DOM variant (`alt1`/`alt2`) and every page renders different class names /
+structure for the same logical content. Run the bot against it to watch its fallback selector chains
+resolve every element and log each `fallback_used` drift event.
 
 Run the bot against it (default base URL `http://localhost:5173`):
 

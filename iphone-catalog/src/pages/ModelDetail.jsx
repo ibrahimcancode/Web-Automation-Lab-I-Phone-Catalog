@@ -1,13 +1,44 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { getModelBySlug, getSimilarModels } from '../data/models';
 import { useStore } from '../state/useStore';
+import { getCurrentDomDriftVariant } from '../chaos/handlers/DomDrift.jsx';
+
+// DOM drift variants change class names/structure on the detail page so the
+// bot's primary selectors genuinely fail and its fallback chains are exercised.
+// Logical content (name, tier, year, price, storage, colors) is unchanged.
+function variantClasses(domVariant) {
+  const isAlt1 = domVariant === 'alt1';
+  const isAlt2 = domVariant === 'alt2';
+  const v = (primary, alt1, alt2) => (isAlt1 ? alt1 : isAlt2 ? alt2 : primary);
+  return {
+    page: v('page-detail container', 'page-detail-alt1 container', 'page-detail-alt2 container'),
+    detailHeader: v('detail-header', 'detail-header-alt1', 'detail-header-alt2'),
+    tierBadge: v('tier-badge', 'tier-badge-alt1', 'tier-badge-alt2'),
+    detailYear: v('detail-year', 'detail-year-alt1', 'detail-year-alt2'),
+    colorLabel: v('color-label', 'color-label-alt1', 'color-label-alt2'),
+    storageOptions: v('storage-options', 'storage-options-alt1', 'storage-options-alt2'),
+    storageBtn: v('storage-btn', 'storage-btn-alt1', 'storage-btn-alt2'),
+    priceLabel: v('price-label', 'price-label-alt1', 'price-label-alt2'),
+    priceValue: v('price-value', 'price-value-alt1', 'price-value-alt2'),
+    keyFeatures: v('key-features', 'key-features-alt1', 'key-features-alt2'),
+    specSheet: v('spec-sheet', 'spec-sheet-alt1', 'spec-sheet-alt2'),
+    cardGrid: v('card-grid', 'card-grid-alt1', 'card-grid-alt2'),
+    productCard: v('product-card mini', 'product-card-alt1 mini', 'product-card-alt2 mini'),
+    cardLink: v('card-link', 'card-link-alt1', 'card-link-alt2'),
+  };
+}
 
 export default function ModelDetail() {
   const { slug } = useParams();
   const model = getModelBySlug(slug);
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedStorage, setSelectedStorage] = useState(0);
+  const [domVariant, setDomVariant] = useState('primary');
+
+  useEffect(() => {
+    setDomVariant(getCurrentDomDriftVariant());
+  }, []);
 
   const toggleFavorite = useStore((s) => s.toggleFavorite);
   const favorites = useStore((s) => s.favorites);
@@ -27,8 +58,10 @@ export default function ModelDetail() {
 
   const formatPrice = (v) => `$${v.launchPriceUSD.toLocaleString()}`;
 
+  const cls = variantClasses(domVariant);
+
   return (
-    <div className="page-detail container">
+    <div className={cls.page}>
       <nav className="breadcrumb" aria-label="Breadcrumb">
         <ol>
           <li><Link to="/">Home</Link></li>
@@ -55,10 +88,10 @@ export default function ModelDetail() {
         </div>
 
         <div className="detail-info">
-          <div className="detail-header">
-            <span className="tier-badge">{model.tier}</span>
+          <div className={cls.detailHeader}>
+            <span className={cls.tierBadge}>{model.tier}</span>
             <h1>{model.displayName}</h1>
-            <p className="detail-year">{model.generationYear}</p>
+            <p className={cls.detailYear}>{model.generationYear}</p>
           </div>
 
           <div className="color-picker">
@@ -77,16 +110,16 @@ export default function ModelDetail() {
                 />
               ))}
             </div>
-            <p className="color-label">{currentColor?.name}</p>
+            <p className={cls.colorLabel}>{currentColor?.name}</p>
           </div>
 
           <div className="storage-picker">
             <h3>Storage</h3>
-            <div className="storage-options" role="radiogroup" aria-label="Select storage">
+            <div className={cls.storageOptions} role="radiogroup" aria-label="Select storage">
               {model.variants.map((v, i) => (
                 <button
                   key={v.storageGB}
-                  className={`storage-btn ${i === selectedStorage ? 'selected' : ''}`}
+                  className={`${cls.storageBtn} ${i === selectedStorage ? 'selected' : ''}`}
                   onClick={() => setSelectedStorage(i)}
                   role="radio"
                   aria-checked={i === selectedStorage}
@@ -98,8 +131,8 @@ export default function ModelDetail() {
           </div>
 
           <div className="price-display">
-            <p className="price-label">Launch price ({activeVariant?.storageGB} GB)</p>
-            <p className="price-value">{activeVariant ? formatPrice(activeVariant) : 'N/A'}</p>
+            <p className={cls.priceLabel}>Launch price ({activeVariant?.storageGB} GB)</p>
+            <p className={cls.priceValue}>{activeVariant ? formatPrice(activeVariant) : 'N/A'}</p>
           </div>
 
           <div className="detail-actions">
@@ -119,7 +152,7 @@ export default function ModelDetail() {
           </div>
 
           {model.keyFeatures?.length > 0 && (
-            <div className="key-features">
+            <div className={cls.keyFeatures}>
               <h3>Key Features</h3>
               <ul>
                 {model.keyFeatures.map((f, i) => <li key={i}>{f}</li>)}
@@ -129,7 +162,7 @@ export default function ModelDetail() {
         </div>
       </div>
 
-      <section className="spec-sheet">
+      <section className={cls.specSheet}>
         <h2>Specifications</h2>
         <div className="spec-groups">
           <div className="spec-group">
@@ -202,17 +235,17 @@ export default function ModelDetail() {
       {similar.length > 0 && (
         <section className="similar-models">
           <h2>Similar Models</h2>
-          <div className="card-grid">
+          <div className={cls.cardGrid}>
             {similar.map((m) => (
-              <div key={m.id} className="product-card mini">
-                <a href={`/model/${m.id}`} className="card-link">
+              <div key={m.id} className={cls.productCard}>
+                <a href={`/model/${m.id}`} className={cls.cardLink}>
                   <div className="card-image">
                     <img src={m.heroImage} alt={m.displayName} loading="lazy" />
                     <div className="card-image-fallback">{m.displayName}</div>
                   </div>
                 </a>
                 <div className="card-body">
-                  <span className="tier-badge">{m.tier}</span>
+                  <span className={cls.tierBadge}>{m.tier}</span>
                   <h3><a href={`/model/${m.id}`}>{m.displayName}</a></h3>
                   <p className="card-year">{m.generationYear}</p>
                 </div>

@@ -162,6 +162,11 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
   const navHandlers = getNavigationHandlers();
   const cap = navHandlers.length > 0 ? maxRetries() : 0;
   let attempt = 0;
+  // The last navigation handler that requested a retry. Persists across
+  // attempts so that when a retried navigation finally succeeds the recovery
+  // is recorded as `resolved` (the disruption was detected AND recovered), not
+  // just counted as a retry.
+  let retriedHandler = null;
 
   while (true) {
     attempt += 1;
@@ -213,6 +218,7 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
 
       if (decision.retry) {
         retryWaitMs = decision.waitMs ?? nextRetryDelayMs(attempt);
+        retriedHandler = handler;
         reporter.event({
           scenario: handler.name,
           action: 'retry',
@@ -248,6 +254,20 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
     // No retry needed. If a handler claimed a non-retry state the recovery was
     // already surfaced; otherwise surface the raw error/navigation result.
     if (!claimed && error) throw error;
+
+    // A previously retried navigation now succeeded — record the recovery so
+    // the summary counts the disruption as detected AND resolved.
+    if (retriedHandler) {
+      reporter.event({
+        scenario: retriedHandler.name,
+        action: 'recovered',
+        outcome: 'resolved',
+        detail: `navigation succeeded after ${attempt} attempt(s)`,
+        step: ctx?.step,
+        url,
+      });
+      retriedHandler = null;
+    }
     return response;
   }
 }

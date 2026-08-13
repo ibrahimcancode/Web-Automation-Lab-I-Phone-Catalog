@@ -87,6 +87,41 @@ overlay blocks the catalog's "Load more" button, and it re-arms `rearm_after_dis
 bot removes it. Run the bot against it to watch it detect the blocker, remove it, and **verify the
 click took effect** (bounded card-count growth check) before moving on.
 
+### Deterministic all-eight live demo (`npm run demo:all`)
+
+`npm run demo:all` starts the Vite sandbox with a **dedicated demo chaos config**
+(`configs/chaos.demo.json`, separate from the normal `chaos.json` and the gauntlet's random-mode
+configs), opens a **visible headed Chromium**, then runs the full bot workflow once — extracting all
+**43 iPhone models** while every one of the **eight core chaos scenarios is forced to fire at its
+controlled point** (`random_mode: false`, fixed seed — probability is ignored, so nothing is left to
+seed luck):
+
+| Scenario | Forced at |
+|---|---|
+| `cookie_banner` | home page load (once per session) |
+| `newsletter_popup` | shortly after the cookie banner is dismissed (re-arms each page) |
+| `simulated_captcha` | first page load +1s (once per session) |
+| `server_errors` | first 2 HTML navigations return 503 (bounded backoff retries) |
+| `slow_responses` | every SPA navigation delayed ~2s (classified slow, recovered in place) |
+| `unexpected_redirect` | every intended navigation detours to `/promo` (recovered via `noredirect=1`) |
+| `dom_drift` | session-wide alternate DOM variant (fallback selector chains) |
+| `blocked_clicks` | catalog "Load more" clicks intercepted by a re-arming overlay |
+
+The demo reuses the exact detect → recover → verify pipeline and bounded retries of a normal run; it
+just guarantees every scenario actually happens. Evidence is saved to `runs/demo-<run-id>/`
+(`results.json`, `summary.json`, `events.jsonl`, `screenshots/`, plus `demo.config.json`), and the
+run finishes with a verification report that asserts all 8 scenarios were **detected ≥ 1 and
+resolved ≥ 1**, `items_processed = 43`, `items_failed = 0`, `invalid = 0`, `duplicates = 0`, and
+`verdict = PASS` (exit 0). Expected duration is roughly 15–20 minutes because all eight disruptions
+overlap deterministically. Use `--limit <n>` for a fast spot-check, `--headless` for CI-style runs,
+or `npm run demo:all:watch` for visible pacing.
+
+```bash
+npm run demo:all                # full deterministic all-eight live demo (headed)
+npm run demo:all:watch          # same, with visible pacing between steps
+node scripts/demo-all.js --headless --limit 3   # fast headless verification
+```
+
 Run the bot against it (default base URL `http://localhost:5173`):
 
 ```bash
@@ -119,6 +154,12 @@ disruption detected and recovered. `tests/test_gauntlet.spec.js` is the all-eigh
 run (`PASS`, zero failures, no invalid/duplicate data) plus per-seed recovery evidence — including
 seed 99, where cookie banner, unexpected redirects, DOM drift, and blocked clicks all fire in a
 single overlapping run and are all handled.
+
+`tests/test_demo_mode.spec.js` is the **deterministic demo-mode test**: it proves the demo config is
+deterministic and forces all eight scenarios (`random_mode: false`), the catalog ships 43 models,
+and a real workflow run against the demo config detects **and** resolves all eight scenarios with
+zero invalid/duplicate data. It also covers the reporter screenshot-failure regression (a capture
+failure must never replace the real root-cause error).
 
 ## Known limitations
 

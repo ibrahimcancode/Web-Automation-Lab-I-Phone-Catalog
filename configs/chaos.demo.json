@@ -1,0 +1,48 @@
+{
+  "enabled": true,
+  "random_mode": false,
+  "seed": 42,
+  "note": "Deterministic all-eight live demo. random_mode=false forces every enabled scenario (probability is ignored, no RNG draws) so a single run deterministically triggers and recovers all 8 core chaos scenarios at controlled points instead of hoping a seed lines up.",
+  "scenarios": {
+    "cookie_banner": {
+      "enabled": true,
+      "probability": 1.0
+    },
+    "newsletter_popup": {
+      "enabled": true,
+      "probability": 1.0,
+      "min_delay_seconds": 2,
+      "max_delay_seconds": 3
+    },
+    "simulated_captcha": {
+      "enabled": true,
+      "probability": 1.0,
+      "delay_seconds": 1
+    },
+    "server_errors": {
+      "enabled": true,
+      "probability": 1.0,
+      "status_code": 503,
+      "fail_first_n": 2
+    },
+    "slow_responses": {
+      "enabled": true,
+      "probability": 1.0,
+      "min_delay_ms": 2000,
+      "max_delay_ms": 2500
+    },
+    "unexpected_redirect": {
+      "enabled": true,
+      "probability": 1.0
+    },
+    "dom_drift": {
+      "enabled": true,
+      "probability": 1.0
+    },
+    "blocked_clicks": {
+      "enabled": true,
+      "probability": 1.0,
+      "rearm_after_dismissal_ms": 1500
+    }
+  }
+}

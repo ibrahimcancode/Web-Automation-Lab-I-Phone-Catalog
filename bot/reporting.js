@@ -57,8 +57,22 @@ export class Reporter {
     const seq = String(this.screenshotCount).padStart(3, '0');
     const safe = name.replace(/[^a-z0-9-_]/gi, '_').slice(0, 60);
     const file = path.join(this.runDir, 'screenshots', `${seq}-${safe}.png`);
-    await page.screenshot({ path: file, fullPage: true });
-    return file;
+    try {
+      await page.screenshot({ path: file, fullPage: true });
+      return file;
+    } catch (err) {
+      // A screenshot must never mask the real failure that triggered it. If the
+      // page/context is gone (e.g. "Target page, context or browser has been
+      // closed"), record the capture failure as evidence and return null so the
+      // caller keeps its original error path.
+      await this.event({
+        scenario: 'workflow',
+        action: 'screenshot_failed',
+        outcome: 'error',
+        detail: `screenshot "${safe}" could not be captured: ${String(err)}`,
+      }).catch(() => {});
+      return null;
+    }
   }
 }
 

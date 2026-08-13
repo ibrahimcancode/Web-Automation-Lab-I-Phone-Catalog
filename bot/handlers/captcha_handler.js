@@ -32,19 +32,46 @@ const handler = {
   async recover(ctx) {
     const { page } = ctx;
 
-    // Move from the checkbox step to the math step if needed.
+    // Move from the checkbox step to the math step if needed. The overlay may
+    // still be presenting, so wait for the checkbox to be actionable first
+    // (bounded) — never block forever, and never assume the question is present
+    // immediately after a click.
     const checkbox = page.locator(selectors.chaos.captcha.checkbox);
-    if (await checkbox.isVisible().catch(() => false)) {
-      await checkbox.click();
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      if (await checkbox.isVisible().catch(() => false)) {
+        await checkbox.click();
+        try {
+          await page.waitForSelector(selectors.chaos.captcha.input, { state: 'visible', timeout: 3000 });
+        } catch {
+          /* input may already be visible */
+        }
+        break;
+      }
       try {
-        await page.waitForSelector(selectors.chaos.captcha.input, { state: 'visible', timeout: 3000 });
+        await page.waitForSelector(selectors.chaos.captcha.checkbox, { state: 'visible', timeout: 1000 });
       } catch {
-        /* input may already be visible */
+        /* keep waiting for the checkbox step */
       }
     }
 
     for (let attempt = 1; attempt <= 2; attempt += 1) {
-      const question = await page.textContent(selectors.chaos.captcha.question).catch(() => '');
+      // Bounded wait for the question text to be present/parseable, so a fast
+      // clearObstacles sweep that caught the overlay mid-animate still solves it.
+      let question = '';
+      for (let wait = 1; wait <= 3; wait += 1) {
+        question = await page.textContent(selectors.chaos.captcha.question).catch(() => '');
+        const parsed = parseMathQuestion(question);
+        if (parsed) break;
+        try {
+          await page.waitForFunction(
+            () => document.querySelector('#simulated-captcha-overlay .chaos-captcha-question')?.textContent?.trim(),
+            { timeout: 1000 },
+          );
+        } catch {
+          /* question not populated yet — retry reading */
+        }
+      }
+
       const parsed = parseMathQuestion(question);
       if (!parsed) {
         return { outcome: 'error', detail: `could not parse captcha question: "${question}"` };

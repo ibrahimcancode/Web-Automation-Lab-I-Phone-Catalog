@@ -96,16 +96,16 @@ configs), opens a **visible headed Chromium**, then runs the full bot workflow o
 controlled point** (`random_mode: false`, fixed seed — probability is ignored, so nothing is left to
 seed luck):
 
-| Scenario | Forced at |
-|---|---|
-| `cookie_banner` | home page load (once per session) |
-| `newsletter_popup` | shortly after the cookie banner is dismissed (re-arms each page) |
-| `simulated_captcha` | first page load +1s (once per session) |
-| `server_errors` | first 2 HTML navigations return 503 (bounded backoff retries) |
-| `slow_responses` | every SPA navigation delayed ~2s (classified slow, recovered in place) |
+| Scenario              | Forced at                                                                    |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `cookie_banner`       | home page load (once per session)                                            |
+| `newsletter_popup`    | shortly after the cookie banner is dismissed (re-arms each page)             |
+| `simulated_captcha`   | first page load +1s (once per session)                                       |
+| `server_errors`       | first 2 HTML navigations return 503 (bounded backoff retries)                |
+| `slow_responses`      | every SPA navigation delayed ~2s (classified slow, recovered in place)       |
 | `unexpected_redirect` | every intended navigation detours to `/promo` (recovered via `noredirect=1`) |
-| `dom_drift` | session-wide alternate DOM variant (fallback selector chains) |
-| `blocked_clicks` | catalog "Load more" clicks intercepted by a re-arming overlay |
+| `dom_drift`           | session-wide alternate DOM variant (fallback selector chains)                |
+| `blocked_clicks`      | catalog "Load more" clicks intercepted by a re-arming overlay                |
 
 The demo reuses the exact detect → recover → verify pipeline and bounded retries of a normal run; it
 just guarantees every scenario actually happens. Evidence is saved to `runs/demo-<run-id>/`

@@ -6,16 +6,5 @@
   "tabWidth": 2,
   "arrowParens": "always",
   "bracketSpacing": true,
-  "endOfLine": "lf",
-  "ignorePatterns": [
-    "node_modules/",
-    "dist/",
-    "runs/",
-    "test-results/",
-    "playwright-report/",
-    "blob-report/",
-    "iphone-catalog/node_modules/",
-    "iphone-catalog/dist/",
-    "package-lock.json"
-  ]
+  "endOfLine": "lf"
 }

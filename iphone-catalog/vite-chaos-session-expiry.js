@@ -15,11 +15,17 @@ const SPA_ROUTES = /^\/($|catalog|model\/|compare|favorites)/;
 function loadConfig() {
   const override = process.env.VITE_CHAOS_JSON;
   if (override) {
-    try { return JSON.parse(override); } catch { /* fall through */ }
+    try {
+      return JSON.parse(override);
+    } catch {
+      /* fall through */
+    }
   }
   try {
     return JSON.parse(readFileSync(path.join(__dirname, 'src', 'chaos', 'chaos.json'), 'utf8'));
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function isHtmlRequest(req) {
@@ -58,14 +64,14 @@ export default function sessionExpiryMiddleware() {
           res.setHeader('Content-Type', 'text/html');
           res.end(
             `<!doctype html><html><head><title>Session Expired</title></head>` +
-            `<body>` +
-            `<div id="session-expired-interstitial" data-chaos="session_expiry" style="text-align:center;padding:60px 20px;font-family:system-ui,sans-serif;">` +
-            `<h1>Session Expired</h1>` +
-            `<p>Your session has timed out. Please continue to restore your session.</p>` +
-            `<a href="/?session_restored=1&dest=${dest}" id="session-continue-btn" ` +
-            `style="display:inline-block;padding:12px 24px;background:#5856d6;color:white;border-radius:8px;text-decoration:none;font-weight:600;">Continue</a>` +
-            `</div>` +
-            `</body></html>`,
+              `<body>` +
+              `<div id="session-expired-interstitial" data-chaos="session_expiry" style="text-align:center;padding:60px 20px;font-family:system-ui,sans-serif;">` +
+              `<h1>Session Expired</h1>` +
+              `<p>Your session has timed out. Please continue to restore your session.</p>` +
+              `<a href="/?session_restored=1&dest=${dest}" id="session-continue-btn" ` +
+              `style="display:inline-block;padding:12px 24px;background:#5856d6;color:white;border-radius:8px;text-decoration:none;font-weight:600;">Continue</a>` +
+              `</div>` +
+              `</body></html>`,
           );
           return undefined;
         }

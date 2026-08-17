@@ -26,7 +26,11 @@ export default function Compare() {
         { label: 'Processor', key: 'chip', format: (v) => v.name },
         { label: 'CPU Cores', key: 'chip', format: (v) => v.cpuCores },
         { label: 'GPU Cores', key: 'chip', format: (v) => v.gpuCores },
-        { label: 'Neural Engine', key: 'chip', format: (v) => v.neuralEngineCores ? `${v.neuralEngineCores} cores` : '—' },
+        {
+          label: 'Neural Engine',
+          key: 'chip',
+          format: (v) => (v.neuralEngineCores ? `${v.neuralEngineCores} cores` : '—'),
+        },
       ],
     },
     {
@@ -48,15 +52,17 @@ export default function Compare() {
     },
     {
       name: 'Battery',
-      rows: [
-        { label: 'Video Playback', key: 'batteryVideoPlaybackHours', format: (v) => v ? `${v} hours` : '—' },
-      ],
+      rows: [{ label: 'Video Playback', key: 'batteryVideoPlaybackHours', format: (v) => (v ? `${v} hours` : '—') }],
     },
     {
       name: 'Colors & Pricing',
       rows: [
         { label: 'Colors', key: 'colors', format: (v) => v.map((c) => c.name).join(', ') },
-        { label: 'Starting Price', key: 'variants', format: (v) => `$${Math.min(...v.map((x) => x.launchPriceUSD)).toLocaleString()}` },
+        {
+          label: 'Starting Price',
+          key: 'variants',
+          format: (v) => `$${Math.min(...v.map((x) => x.launchPriceUSD)).toLocaleString()}`,
+        },
       ],
     },
   ];
@@ -83,7 +89,9 @@ export default function Compare() {
         <div className="empty-state">
           <h3>Select at least 2 models to compare</h3>
           <p>Add models from the catalog or detail pages to start comparing.</p>
-          <Link to="/catalog" className="btn btn-primary">Browse Catalog</Link>
+          <Link to="/catalog" className="btn btn-primary">
+            Browse Catalog
+          </Link>
         </div>
       </div>
     );
@@ -95,11 +103,7 @@ export default function Compare() {
 
       <div className="compare-toolbar">
         <label className="highlight-toggle">
-          <input
-            type="checkbox"
-            checked={highlightDiffs}
-            onChange={(e) => setHighlightDiffs(e.target.checked)}
-          />
+          <input type="checkbox" checked={highlightDiffs} onChange={(e) => setHighlightDiffs(e.target.checked)} />
           Highlight differences
         </label>
         {compareIds.length < 4 && (
@@ -181,7 +185,9 @@ export default function Compare() {
                 </button>
               ))}
             </div>
-            <button className="btn btn-text" onClick={() => setShowAddModal(false)}>Cancel</button>
+            <button className="btn btn-text" onClick={() => setShowAddModal(false)}>
+              Cancel
+            </button>
           </div>
         </div>
       )}

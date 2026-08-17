@@ -27,7 +27,10 @@ const handler = {
       const slowLoadMs = 2000;
       const redirectWindow = ctx.navigationMs > slowLoadMs ? 6500 : 1500;
       try {
-        await page.waitForURL((u) => u.pathname === '/promo' || (u.pathname !== targetPath && !u.href.includes(targetPath)), { timeout: redirectWindow });
+        await page.waitForURL(
+          (u) => u.pathname === '/promo' || (u.pathname !== targetPath && !u.href.includes(targetPath)),
+          { timeout: redirectWindow },
+        );
         currentUrl = page.url();
         currentPath = new URL(currentUrl).pathname;
         if (currentPath === '/promo' || (currentPath !== targetPath && !currentUrl.includes(targetPath))) {

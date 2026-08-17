@@ -61,11 +61,11 @@ Only `chaos.json` (or the file pointed to by `CHAOS_CONFIG_PATH`, see §6) shoul
 
 Week 1 implements only three scenarios.
 
-| Scenario | Status | Maps to brief scenario |
-|----------|--------|-------------------------|
-| Cookie Banner | Required | #2 Cookie / consent banner |
-| Newsletter Popup | Required | #1 Random pop-up / modal |
-| Slow Response | Required | #5 Slow responses / timeouts (delay only — see note) |
+| Scenario         | Status   | Maps to brief scenario                               |
+| ---------------- | -------- | ---------------------------------------------------- |
+| Cookie Banner    | Required | #2 Cookie / consent banner                           |
+| Newsletter Popup | Required | #1 Random pop-up / modal                             |
+| Slow Response    | Required | #5 Slow responses / timeouts (delay only — see note) |
 
 **Note on Slow Response scope:** the brief's scenario #5 also asks the bot to "distinguish slow from dead." A true never-responds ("hang") mode belongs conceptually to the "Site down / server errors" scenario (#4), which is explicitly out of scope for Week 1 (§19). Do not add a hang mode now — it's called out here only so it isn't forgotten when #4 is implemented in a later week.
 
@@ -132,7 +132,7 @@ Every scenario must exist as an independent handler.
 
 Handlers must never directly communicate.
 
-Each handler owns its own behavior, and each handler declares its own **hook type** (§8) so the engine knows *when* in the request/response cycle to run it.
+Each handler owns its own behavior, and each handler declares its own **hook type** (§8) so the engine knows _when_ in the request/response cycle to run it.
 
 ---
 
@@ -159,17 +159,13 @@ Example
   "seed": 42,
 
   "scenarios": {
-
     "cookie_banner": {
-
       "enabled": true,
 
       "probability": 1.0
-
     },
 
     "newsletter_popup": {
-
       "enabled": true,
 
       "probability": 0.35,
@@ -177,23 +173,18 @@ Example
       "min_delay_seconds": 2,
 
       "max_delay_seconds": 6
-
     },
 
     "slow_response": {
-
       "enabled": true,
 
-      "probability": 0.40,
+      "probability": 0.4,
 
       "min_delay_ms": 2500,
 
       "max_delay_ms": 5000
-
     }
-
   }
-
 }
 ```
 
@@ -253,7 +244,7 @@ must always produce the same sequence of activation decisions across a run (§10
 
 Every incoming request follows this pipeline. There are exactly two hook types — every current and future handler must declare which one it is, because they run at different points:
 
-- **`PRE_RESPONSE` (delay-type):** runs before the route's normal response body is generated or sent. Only changes *timing*. **Slow Response is `PRE_RESPONSE`.**
+- **`PRE_RESPONSE` (delay-type):** runs before the route's normal response body is generated or sent. Only changes _timing_. **Slow Response is `PRE_RESPONSE`.**
 - **`POST_RESPONSE` (injection-type):** runs after the route has generated its normal HTML response, and mutates the outgoing response body/headers before it's sent to the browser. Never touches the route handler or its templates. **Cookie Banner and Newsletter Popup are `POST_RESPONSE`.**
 
 ```
@@ -276,7 +267,7 @@ Return Response
 Log the request's chaos outcome (§14)
 ```
 
-**Concurrency note:** because Slow Response blocks synchronously before the route runs, the Flask dev server must run with `threaded=True` (or an equivalent multi-worker setup) so one slow request doesn't stall every other concurrent request — otherwise a single triggered delay would make the *whole sandbox* look dead, not just one page.
+**Concurrency note:** because Slow Response blocks synchronously before the route runs, the Flask dev server must run with `threaded=True` (or an equivalent multi-worker setup) so one slow request doesn't stall every other concurrent request — otherwise a single triggered delay would make the _whole sandbox_ look dead, not just one page.
 
 **Injection mechanism, concretely:** in the `POST_RESPONSE` hook (Flask `after_request`), check `response.mimetype == "text/html"`; if so, decode the body, find the last `</body>` (case-insensitive), and insert the rendered fragment(s) — HTML + a `<link>`/`<script>` reference to `static/chaos.css` / `static/chaos.js` — immediately before it, then re-encode. If no `</body>` is found, skip injection and log a warning rather than corrupting the response.
 
@@ -383,7 +374,7 @@ Requirements
 
 ---
 
-**"Once per session" mechanism (concrete):** on Accept or Reject, `chaos.js` sets a real HTTP cookie, e.g. `chaos_cookie_seen=1` (not just `localStorage` — a real cookie fits the theme and lets the server-side `POST_RESPONSE` hook decide whether to inject the banner at all, keeping the decision server-side rather than a client-only hide). The engine's injection check is: *scenario is active this request (§10) AND `chaos_cookie_seen` cookie is absent.* A fresh browser/incognito session has no cookie, so the banner reappears — matching "once per browser session" exactly.
+**"Once per session" mechanism (concrete):** on Accept or Reject, `chaos.js` sets a real HTTP cookie, e.g. `chaos_cookie_seen=1` (not just `localStorage` — a real cookie fits the theme and lets the server-side `POST_RESPONSE` hook decide whether to inject the banner at all, keeping the decision server-side rather than a client-only hide). The engine's injection check is: _scenario is active this request (§10) AND `chaos_cookie_seen` cookie is absent._ A fresh browser/incognito session has no cookie, so the banner reappears — matching "once per browser session" exactly.
 
 ---
 
@@ -509,7 +500,14 @@ Every chaos event must be logged.
 Each line must include at minimum:
 
 ```json
-{"timestamp": "...", "scenario": "newsletter_popup", "action": "triggered", "duration_ms": null, "result": "displayed", "request_path": "/listing"}
+{
+  "timestamp": "...",
+  "scenario": "newsletter_popup",
+  "action": "triggered",
+  "duration_ms": null,
+  "result": "displayed",
+  "request_path": "/listing"
+}
 ```
 
 Example sequence (conceptually, not literal file format):
@@ -621,7 +619,7 @@ Future handlers
 - rate limiting
 - infinite scroll
 
-must follow the same interface. (Anticipated hook types for these, for planning purposes only — not built now: redirect/server error/rate limiting are likely `PRE_RESPONSE`-adjacent — response *status/location* mutators rather than body mutators; DOM mutation and blocked click are `POST_RESPONSE` body mutators like the current two; captcha is closer to a full alternate route. This may justify a third hook type later — do not build it speculatively in Week 1.)
+must follow the same interface. (Anticipated hook types for these, for planning purposes only — not built now: redirect/server error/rate limiting are likely `PRE_RESPONSE`-adjacent — response _status/location_ mutators rather than body mutators; DOM mutation and blocked click are `POST_RESPONSE` body mutators like the current two; captcha is closer to a full alternate route. This may justify a third hook type later — do not build it speculatively in Week 1.)
 
 ---
 

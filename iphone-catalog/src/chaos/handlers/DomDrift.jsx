@@ -15,11 +15,15 @@ export function getDomDriftVariant() {
   try {
     const stored = sessionStorage.getItem(SESSION_KEY);
     if (stored === 'alt1' || stored === 'alt2') return stored;
-  } catch { /* storage unavailable */ }
+  } catch {
+    /* storage unavailable */
+  }
   const variant = 'alt1';
   try {
     sessionStorage.setItem(SESSION_KEY, variant);
-  } catch { /* storage unavailable */ }
+  } catch {
+    /* storage unavailable */
+  }
   return variant;
 }
 

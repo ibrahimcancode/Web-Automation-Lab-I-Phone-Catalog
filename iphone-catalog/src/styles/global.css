@@ -22,8 +22,9 @@ body {
   line-height: var(--font-body-line);
   color: var(--color-text-primary);
   background-color: var(--color-bg);
-  transition: background-color var(--duration-normal) var(--easing-default),
-              color var(--duration-normal) var(--easing-default);
+  transition:
+    background-color var(--duration-normal) var(--easing-default),
+    color var(--duration-normal) var(--easing-default);
 }
 
 img,
@@ -54,7 +55,8 @@ a {
   text-decoration: none;
 }
 
-ul, ol {
+ul,
+ol {
   list-style: none;
 }
 

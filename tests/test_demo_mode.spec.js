@@ -19,12 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { startSite } from './helpers/site.js';
 import { runBotOnce } from './helpers/bot.js';
 import { Reporter } from '../bot/reporting.js';
-import {
-  loadDemoConfig,
-  validateDemoConfig,
-  DEMO_SCENARIOS,
-  DEMO_CATALOG_SIZE,
-} from '../configs/demoConfig.js';
+import { loadDemoConfig, validateDemoConfig, DEMO_SCENARIOS, DEMO_CATALOG_SIZE } from '../configs/demoConfig.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const modelsJson = path.join(__dirname, '..', 'iphone-catalog', 'src', 'data', 'models.json');
@@ -103,7 +98,11 @@ test.describe('Reporter screenshot resilience (regression: masked root-cause err
     const reporter = makeReporter();
     await reporter.init();
     const boom = new Error('Target page, context or browser has been closed');
-    const page = { screenshot: async () => { throw boom; } };
+    const page = {
+      screenshot: async () => {
+        throw boom;
+      },
+    };
 
     const file = await reporter.screenshot(page, 'fatal-error');
 
@@ -133,10 +132,16 @@ test.describe('Reporter screenshot resilience (regression: masked root-cause err
         { scenario: 'cookie_banner', action: 'detected', outcome: 'detected' },
         { scenario: 'cookie_banner', action: 'recovered', outcome: 'resolved' },
       ],
-      results: [{
-        id: 'iphone-16e', name: 'iPhone 16e', tier: 'Standard',
-        year: 2025, price: 499, status: 'ok',
-      }],
+      results: [
+        {
+          id: 'iphone-16e',
+          name: 'iPhone 16e',
+          tier: 'Standard',
+          year: 2025,
+          price: 499,
+          status: 'ok',
+        },
+      ],
       runMeta: { run_id: 'test-run' },
     });
     expect(summary.verdict).toBe('PASS');

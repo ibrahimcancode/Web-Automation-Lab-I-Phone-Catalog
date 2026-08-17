@@ -1,20 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 
-const models = JSON.parse(
-  fs.readFileSync(path.join(__dirname, 'src', 'data', 'models.json'), 'utf8')
-);
+const models = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'data', 'models.json'), 'utf8'));
 
 const outDir = path.join(__dirname, 'public', 'images');
 fs.mkdirSync(outDir, { recursive: true });
 
 const tierColors = {
-  'SE': '#636366',
-  'Standard': '#007AFF',
-  'Mini': '#5856D6',
-  'Plus': '#FF9500',
-  'Air': '#AF52DE',
-  'Pro': '#FF2D55',
+  SE: '#636366',
+  Standard: '#007AFF',
+  Mini: '#5856D6',
+  Plus: '#FF9500',
+  Air: '#AF52DE',
+  Pro: '#FF2D55',
   'Pro Max': '#C8102E',
 };
 
@@ -85,31 +83,70 @@ function getPhoneDimensions(displayInches, era) {
   const scale = displayInches / 6.1;
   if (era === 'dynamicIsland') {
     return {
-      x: 280, y: 60, w: 240, h: 520,
-      rx: 32, screenRx: 24,
-      screenX: 288, screenY: 68, screenW: 224, screenH: 504,
-      screenClipX: 296, screenClipY: 92, screenClipW: 208, screenClipH: 456,
-      buttonY1: 140, buttonY2: 180, buttonY3: 232,
-      sideButtonY: 180, sideButtonH: 52,
+      x: 280,
+      y: 60,
+      w: 240,
+      h: 520,
+      rx: 32,
+      screenRx: 24,
+      screenX: 288,
+      screenY: 68,
+      screenW: 224,
+      screenH: 504,
+      screenClipX: 296,
+      screenClipY: 92,
+      screenClipW: 208,
+      screenClipH: 456,
+      buttonY1: 140,
+      buttonY2: 180,
+      buttonY3: 232,
+      sideButtonY: 180,
+      sideButtonH: 52,
     };
   }
   if (era === 'notch') {
     return {
-      x: 280, y: 60, w: 240, h: 520,
-      rx: 28, screenRx: 20,
-      screenX: 288, screenY: 68, screenW: 224, screenH: 504,
-      screenClipX: 296, screenClipY: 92, screenClipW: 208, screenClipH: 456,
-      buttonY1: 140, buttonY2: 180, buttonY3: 232,
-      sideButtonY: 180, sideButtonH: 52,
+      x: 280,
+      y: 60,
+      w: 240,
+      h: 520,
+      rx: 28,
+      screenRx: 20,
+      screenX: 288,
+      screenY: 68,
+      screenW: 224,
+      screenH: 504,
+      screenClipX: 296,
+      screenClipY: 92,
+      screenClipW: 208,
+      screenClipH: 456,
+      buttonY1: 140,
+      buttonY2: 180,
+      buttonY3: 232,
+      sideButtonY: 180,
+      sideButtonH: 52,
     };
   }
   return {
-    x: 284, y: 68, w: 232, h: 500,
-    rx: 24, screenRx: 2,
-    screenX: 292, screenY: 112, screenW: 216, screenH: 360,
-    screenClipX: 302, screenClipY: 112, screenClipW: 196, screenClipH: 360,
-    buttonY1: 138, buttonY2: 178, buttonY3: 226,
-    sideButtonY: 178, sideButtonH: 48,
+    x: 284,
+    y: 68,
+    w: 232,
+    h: 500,
+    rx: 24,
+    screenRx: 2,
+    screenX: 292,
+    screenY: 112,
+    screenW: 216,
+    screenH: 360,
+    screenClipX: 302,
+    screenClipY: 112,
+    screenClipW: 196,
+    screenClipH: 360,
+    buttonY1: 138,
+    buttonY2: 178,
+    buttonY3: 226,
+    sideButtonY: 178,
+    sideButtonH: 48,
   };
 }
 
@@ -275,11 +312,12 @@ function generateSVG(model) {
   const frameGradient = getFrameGradient(material);
   const screenGradient = getScreenGradient(era);
 
-  const screenContent = era === 'dynamicIsland'
-    ? generateDynamicIsland(dim, tierColor, model, tierColor)
-    : era === 'notch'
-      ? generateNotch(dim, tierColor, model, tierColor)
-      : generateHomeButton(dim, tierColor, model, tierColor);
+  const screenContent =
+    era === 'dynamicIsland'
+      ? generateDynamicIsland(dim, tierColor, model, tierColor)
+      : era === 'notch'
+        ? generateNotch(dim, tierColor, model, tierColor)
+        : generateHomeButton(dim, tierColor, model, tierColor);
 
   const screenClipY = era === 'homeButton' ? dim.screenClipY : dim.screenClipY;
 
@@ -359,7 +397,9 @@ for (const model of models) {
   const svgFilename = `${model.id}-hero.svg`;
   fs.writeFileSync(path.join(outDir, svgFilename), svg);
   count++;
-  console.log(`Generated: ${svgFilename} (${model.displayName} - ${getEra(model.generationYear, model.tier, model.id)})`);
+  console.log(
+    `Generated: ${svgFilename} (${model.displayName} - ${getEra(model.generationYear, model.tier, model.id)})`,
+  );
 }
 
 console.log(`\nGenerated ${count} era-accurate phone renders in public/images/`);

@@ -25,7 +25,9 @@ export default function Favorites() {
         <div className="empty-state">
           <h3>No saved models yet</h3>
           <p>Save models you're interested in to find them here.</p>
-          <Link to="/catalog" className="btn btn-primary">Browse Catalog</Link>
+          <Link to="/catalog" className="btn btn-primary">
+            Browse Catalog
+          </Link>
         </div>
       </div>
     );
@@ -61,7 +63,10 @@ export default function Favorites() {
               <div className="card-actions">
                 <button
                   className="btn-icon favorite active"
-                  onClick={(e) => { e.preventDefault(); toggleFavorite(model.id); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleFavorite(model.id);
+                  }}
                   aria-label={`Remove ${model.displayName} from favorites`}
                 >
                   ♥
@@ -76,7 +81,11 @@ export default function Favorites() {
                       addToCompare(model.id);
                     }
                   }}
-                  aria-label={compare.includes(model.id) ? `Remove ${model.displayName} from compare` : `Add ${model.displayName} to compare`}
+                  aria-label={
+                    compare.includes(model.id)
+                      ? `Remove ${model.displayName} from compare`
+                      : `Add ${model.displayName} to compare`
+                  }
                 >
                   ⇄
                 </button>
@@ -92,10 +101,15 @@ export default function Favorites() {
             <h2>Clear all favorites?</h2>
             <p>This will remove all {models.length} saved models. This cannot be undone.</p>
             <div className="modal-actions">
-              <button className="btn btn-text" onClick={() => setShowClearModal(false)}>Cancel</button>
+              <button className="btn btn-text" onClick={() => setShowClearModal(false)}>
+                Cancel
+              </button>
               <button
                 className="btn btn-danger"
-                onClick={() => { clearFavorites(); setShowClearModal(false); }}
+                onClick={() => {
+                  clearFavorites();
+                  setShowClearModal(false);
+                }}
               >
                 Clear all
               </button>

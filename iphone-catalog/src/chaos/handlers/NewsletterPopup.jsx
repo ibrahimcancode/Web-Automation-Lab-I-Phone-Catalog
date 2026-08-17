@@ -90,12 +90,7 @@ export function NewsletterPopup({ cookieDismissed }) {
   if (!visible) return null;
 
   return (
-    <div
-      className="chaos-popup-overlay"
-      data-chaos="popup"
-      onClick={handleBackdropClick}
-      role="presentation"
-    >
+    <div className="chaos-popup-overlay" data-chaos="popup" onClick={handleBackdropClick} role="presentation">
       <div
         id="newsletter-popup"
         ref={popupRef}
@@ -105,11 +100,7 @@ export function NewsletterPopup({ cookieDismissed }) {
         className="chaos-popup"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          className="chaos-popup-close"
-          onClick={close}
-          aria-label="Close popup"
-        >
+        <button className="chaos-popup-close" onClick={close} aria-label="Close popup">
           ×
         </button>
 

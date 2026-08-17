@@ -64,8 +64,12 @@ export default function ModelDetail() {
     <div className={cls.page}>
       <nav className="breadcrumb" aria-label="Breadcrumb">
         <ol>
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/catalog">Catalog</Link></li>
+          <li>
+            <Link to="/">Home</Link>
+          </li>
+          <li>
+            <Link to="/catalog">Catalog</Link>
+          </li>
           <li aria-current="page">{model.displayName}</li>
         </ol>
       </nav>
@@ -73,10 +77,7 @@ export default function ModelDetail() {
       <div className="detail-layout">
         <div className="detail-gallery">
           <div className="hero-image">
-            <img
-              src={model.heroImage}
-              alt={`${model.displayName} in ${currentColor?.name || ''}`}
-            />
+            <img src={model.heroImage} alt={`${model.displayName} in ${currentColor?.name || ''}`} />
           </div>
           {model.gallery?.length > 0 && (
             <div className="gallery-strip">
@@ -144,7 +145,7 @@ export default function ModelDetail() {
             </button>
             <button
               className={`btn btn-secondary ${compare.includes(model.id) ? 'comparing' : ''}`}
-              onClick={() => compare.includes(model.id) ? removeFromCompare(model.id) : addToCompare(model.id)}
+              onClick={() => (compare.includes(model.id) ? removeFromCompare(model.id) : addToCompare(model.id))}
               disabled={!compare.includes(model.id) && compare.length >= 4}
             >
               {compare.includes(model.id) ? '⇄ In Compare' : '⇄ Compare'}
@@ -155,7 +156,9 @@ export default function ModelDetail() {
             <div className={cls.keyFeatures}>
               <h3>Key Features</h3>
               <ul>
-                {model.keyFeatures.map((f, i) => <li key={i}>{f}</li>)}
+                {model.keyFeatures.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
               </ul>
             </div>
           )}
@@ -169,8 +172,14 @@ export default function ModelDetail() {
             <h3>Display</h3>
             <table>
               <tbody>
-                <tr><td>Size</td><td>{model.displayInches} inches</td></tr>
-                <tr><td>Type</td><td>{model.displayType}</td></tr>
+                <tr>
+                  <td>Size</td>
+                  <td>{model.displayInches} inches</td>
+                </tr>
+                <tr>
+                  <td>Type</td>
+                  <td>{model.displayType}</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -178,11 +187,23 @@ export default function ModelDetail() {
             <h3>Chip</h3>
             <table>
               <tbody>
-                <tr><td>Processor</td><td>{model.chip.name}</td></tr>
-                <tr><td>CPU Cores</td><td>{model.chip.cpuCores}</td></tr>
-                <tr><td>GPU Cores</td><td>{model.chip.gpuCores}</td></tr>
+                <tr>
+                  <td>Processor</td>
+                  <td>{model.chip.name}</td>
+                </tr>
+                <tr>
+                  <td>CPU Cores</td>
+                  <td>{model.chip.cpuCores}</td>
+                </tr>
+                <tr>
+                  <td>GPU Cores</td>
+                  <td>{model.chip.gpuCores}</td>
+                </tr>
                 {model.chip.neuralEngineCores && (
-                  <tr><td>Neural Engine</td><td>{model.chip.neuralEngineCores} cores</td></tr>
+                  <tr>
+                    <td>Neural Engine</td>
+                    <td>{model.chip.neuralEngineCores} cores</td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -191,11 +212,23 @@ export default function ModelDetail() {
             <h3>Camera</h3>
             <table>
               <tbody>
-                <tr><td>System</td><td>{model.camera.system}</td></tr>
-                <tr><td>Lenses</td><td>{model.camera.lenses.join(', ')}</td></tr>
-                <tr><td>Front Camera</td><td>{model.camera.frontCameraMP} MP</td></tr>
+                <tr>
+                  <td>System</td>
+                  <td>{model.camera.system}</td>
+                </tr>
+                <tr>
+                  <td>Lenses</td>
+                  <td>{model.camera.lenses.join(', ')}</td>
+                </tr>
+                <tr>
+                  <td>Front Camera</td>
+                  <td>{model.camera.frontCameraMP} MP</td>
+                </tr>
                 {model.camera.maxOpticalZoom && (
-                  <tr><td>Max Optical Zoom</td><td>{model.camera.maxOpticalZoom}</td></tr>
+                  <tr>
+                    <td>Max Optical Zoom</td>
+                    <td>{model.camera.maxOpticalZoom}</td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -205,7 +238,10 @@ export default function ModelDetail() {
               <h3>Battery</h3>
               <table>
                 <tbody>
-                  <tr><td>Video Playback</td><td>{model.batteryVideoPlaybackHours} hours</td></tr>
+                  <tr>
+                    <td>Video Playback</td>
+                    <td>{model.batteryVideoPlaybackHours} hours</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -214,9 +250,20 @@ export default function ModelDetail() {
             <h3>Design</h3>
             <table>
               <tbody>
-                <tr><td>Weight</td><td>{model.weightGrams}g</td></tr>
-                <tr><td>Dimensions</td><td>{model.dimensionsMM.height} × {model.dimensionsMM.width} × {model.dimensionsMM.depth} mm</td></tr>
-                <tr><td>Materials</td><td>{model.materials}</td></tr>
+                <tr>
+                  <td>Weight</td>
+                  <td>{model.weightGrams}g</td>
+                </tr>
+                <tr>
+                  <td>Dimensions</td>
+                  <td>
+                    {model.dimensionsMM.height} × {model.dimensionsMM.width} × {model.dimensionsMM.depth} mm
+                  </td>
+                </tr>
+                <tr>
+                  <td>Materials</td>
+                  <td>{model.materials}</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -224,8 +271,14 @@ export default function ModelDetail() {
             <h3>Colors & Storage</h3>
             <table>
               <tbody>
-                <tr><td>Colors</td><td>{model.colors.map((c) => c.name).join(', ')}</td></tr>
-                <tr><td>Storage Options</td><td>{model.variants.map((v) => `${v.storageGB} GB`).join(', ')}</td></tr>
+                <tr>
+                  <td>Colors</td>
+                  <td>{model.colors.map((c) => c.name).join(', ')}</td>
+                </tr>
+                <tr>
+                  <td>Storage Options</td>
+                  <td>{model.variants.map((v) => `${v.storageGB} GB`).join(', ')}</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -246,7 +299,9 @@ export default function ModelDetail() {
                 </a>
                 <div className="card-body">
                   <span className={cls.tierBadge}>{m.tier}</span>
-                  <h3><a href={`/model/${m.id}`}>{m.displayName}</a></h3>
+                  <h3>
+                    <a href={`/model/${m.id}`}>{m.displayName}</a>
+                  </h3>
                   <p className="card-year">{m.generationYear}</p>
                 </div>
               </div>

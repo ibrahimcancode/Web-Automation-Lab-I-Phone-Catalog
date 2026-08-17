@@ -7,13 +7,7 @@ import { createSession, closeSession, DEFAULT_BASE_URL } from './browser.js';
 import { Reporter, makeRunId } from './reporting.js';
 import { runWorkflow } from './workflow.js';
 import { getHandlers, ensureHandlersLoaded } from './handlers/index.js';
-import {
-  readCheckpoint,
-  writeCheckpoint,
-  createCheckpoint,
-  findResumeCheckpoint,
-  markResumed,
-} from './checkpoint.js';
+import { writeCheckpoint, createCheckpoint, findResumeCheckpoint, markResumed } from './checkpoint.js';
 
 function parseArgs(argv) {
   const args = {
@@ -85,7 +79,9 @@ export async function main(argv = process.argv) {
       checkpoint = resumeResult.checkpoint;
       runDir = resumeResult.runDir;
       resumedFrom = checkpoint.run_id;
-      console.log(`[bot] resuming from checkpoint: ${resumedFrom} (${checkpoint.completed_item_ids.length} items completed)`);
+      console.log(
+        `[bot] resuming from checkpoint: ${resumedFrom} (${checkpoint.completed_item_ids.length} items completed)`,
+      );
     } else {
       console.error(`[bot] no valid checkpoint found for: ${args.resume}`);
       return 1;
@@ -96,7 +92,9 @@ export async function main(argv = process.argv) {
     runDir = path.join('runs', makeRunId());
   }
 
-  console.log(`[bot] base_url=${baseUrl} limit=${args.limit ?? 'full'} run_dir=${runDir} handlers=${handlers.map((h) => h.name).join(',') || 'none'}`);
+  console.log(
+    `[bot] base_url=${baseUrl} limit=${args.limit ?? 'full'} run_dir=${runDir} handlers=${handlers.map((h) => h.name).join(',') || 'none'}`,
+  );
 
   const reporter = new Reporter({ runDir, baseUrl });
   await reporter.init();
@@ -115,12 +113,17 @@ export async function main(argv = process.argv) {
     await writeCheckpoint(runDir, checkpoint);
   }
 
-  reporter.event({ scenario: 'workflow', action: 'run_started', outcome: 'started', detail: `limit=${args.limit ?? 'full'}${resumedFrom ? ` resumed_from=${resumedFrom}` : ''}` });
+  reporter.event({
+    scenario: 'workflow',
+    action: 'run_started',
+    outcome: 'started',
+    detail: `limit=${args.limit ?? 'full'}${resumedFrom ? ` resumed_from=${resumedFrom}` : ''}`,
+  });
 
   let session = null;
   try {
     session = await createSession({ headless: args.headless, baseUrl });
-    const { results, summary } = await runWorkflow({
+    const { summary } = await runWorkflow({
       session,
       reporter,
       limit: args.limit,
@@ -129,7 +132,9 @@ export async function main(argv = process.argv) {
       runDir,
     });
 
-    console.log(`[bot] items_processed=${summary.items_processed} items_failed=${summary.items_failed} verdict=${summary.verdict}`);
+    console.log(
+      `[bot] items_processed=${summary.items_processed} items_failed=${summary.items_failed} verdict=${summary.verdict}`,
+    );
     for (const [name, d] of Object.entries(summary.disruptions)) {
       if (d.detected > 0) {
         console.log(`[bot] disruption ${name}: detected=${d.detected} resolved=${d.resolved} retries=${d.retries}`);

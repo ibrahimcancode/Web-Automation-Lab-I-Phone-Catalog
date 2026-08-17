@@ -84,7 +84,7 @@
 }
 
 /* ── Dark Mode ── */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --color-bg: #0a0a0a;
   --color-surface: #1c1c1e;
   --color-surface-elevated: #2c2c2e;

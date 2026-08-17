@@ -17,7 +17,7 @@
     "demo:all": "node scripts/demo-all.js",
     "demo:all:watch": "node scripts/demo-all.js --watch",
     "test": "playwright test",
-    "test:unit": "playwright test tests/test_unit_week*.spec.js",
+    "test:unit": "playwright test \"tests/test_unit_week2.spec.js\" \"tests/test_unit_week3.spec.js\"",
     "test:happy": "playwright test tests/test_happy_path.spec.js",
     "test:scenarios": "playwright test tests/test_scenarios_week*.spec.js",
     "test:gauntlet": "playwright test tests/test_gauntlet.spec.js",
@@ -32,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
     "eslint": "^9.39.5",
     "globals": "^15.15.0",
     "playwright": "^1.62.1",

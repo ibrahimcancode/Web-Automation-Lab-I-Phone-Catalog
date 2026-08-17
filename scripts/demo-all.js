@@ -153,24 +153,27 @@ export async function main(argv = process.argv) {
   const runDir = args.runDir ?? path.join('runs', `demo-${makeRunId()}`);
   const reporter = new Reporter({ runDir, baseUrl: site.baseUrl });
   await reporter.init();
-  await writeFile(
-    path.join(runDir, 'demo.config.json'),
-    JSON.stringify(demoConfig, null, 2) + '\n',
-    'utf8',
-  );
-  reporter.event({ scenario: 'workflow', action: 'demo_started', outcome: 'started', detail: `port=${args.port} headless=${args.headless} limit=${args.limit ?? 'full'}` });
+  await writeFile(path.join(runDir, 'demo.config.json'), JSON.stringify(demoConfig, null, 2) + '\n', 'utf8');
+  reporter.event({
+    scenario: 'workflow',
+    action: 'demo_started',
+    outcome: 'started',
+    detail: `port=${args.port} headless=${args.headless} limit=${args.limit ?? 'full'}`,
+  });
   console.log(`[demo] run_dir=${runDir} base_url=${site.baseUrl}`);
 
   let session = null;
   let exitCode = 1;
   try {
-    console.log(`[demo] opening ${args.headless ? 'headless' : 'VISIBLE headed'} Chromium (43 models) — watch every disruption fire and be recovered...`);
+    console.log(
+      `[demo] opening ${args.headless ? 'headless' : 'VISIBLE headed'} Chromium (43 models) — watch every disruption fire and be recovered...`,
+    );
     session = await createSession({
       headless: args.headless,
       baseUrl: site.baseUrl,
     });
 
-    const { results, summary } = await runWorkflow({ session, reporter, limit: args.limit, startedAt });
+    const { summary } = await runWorkflow({ session, reporter, limit: args.limit, startedAt });
 
     console.log('');
     console.log('┌─────────────────────────────────────────────────────────────────────────┐');

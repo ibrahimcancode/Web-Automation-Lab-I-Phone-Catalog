@@ -15,11 +15,19 @@ import { get_decision } from '../engine.js';
 const SESSION_KEY = 'chaos_captcha_solved';
 
 function isCaptchaSolved() {
-  try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 function markCaptchaSolved() {
-  try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
+  try {
+    sessionStorage.setItem(SESSION_KEY, '1');
+  } catch {
+    /* ignore */
+  }
 }
 
 // Seeded PRNG for deterministic tile generation from chaos seed
@@ -185,9 +193,7 @@ export function SimulatedCaptcha() {
 
   const handleSubmit = useCallback(() => {
     // Check if selection matches layout
-    const correct = layout.every((hasLight, i) =>
-      hasLight === selected.has(i),
-    );
+    const correct = layout.every((hasLight, i) => hasLight === selected.has(i));
 
     if (correct) {
       setPhase('verifying');
@@ -222,8 +228,17 @@ export function SimulatedCaptcha() {
       <div className="chaos-captcha-card" style={{ maxWidth: 440 }}>
         <div className="chaos-captcha-header">
           <div className="chaos-captcha-shield">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
           </div>
           <h2>Security Check</h2>
@@ -262,11 +277,7 @@ export function SimulatedCaptcha() {
                     boxSizing: 'border-box',
                   }}
                 >
-                  {layout[index] ? (
-                    <TrafficLightSVG variant={index} />
-                  ) : (
-                    <DistractorScene index={index} />
-                  )}
+                  {layout[index] ? <TrafficLightSVG variant={index} /> : <DistractorScene index={index} />}
                 </button>
               ))}
             </div>

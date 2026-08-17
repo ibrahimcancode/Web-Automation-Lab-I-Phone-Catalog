@@ -11,7 +11,9 @@ function appendToStorage(entry) {
     const existing = JSON.parse(sessionStorage.getItem(LOG_KEY) || '[]');
     existing.push(entry);
     sessionStorage.setItem(LOG_KEY, JSON.stringify(existing));
-  } catch { /* storage full or unavailable */ }
+  } catch {
+    /* storage full or unavailable */
+  }
 }
 
 export function logEvent({ scenario, action, duration_ms = null, result, request_path = window.location.pathname }) {
@@ -26,7 +28,9 @@ export function logEvent({ scenario, action, duration_ms = null, result, request
 
   // Console output in development
   if (import.meta.env.DEV) {
-    console.log(`[CHAOS] ${scenario} ${action} (result=${result}${duration_ms != null ? `, delay_ms=${duration_ms}` : ''})`);
+    console.log(
+      `[CHAOS] ${scenario} ${action} (result=${result}${duration_ms != null ? `, delay_ms=${duration_ms}` : ''})`,
+    );
   }
 
   appendToStorage(entry);

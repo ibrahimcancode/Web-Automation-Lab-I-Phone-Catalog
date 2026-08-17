@@ -40,12 +40,17 @@ function validateConfig(config) {
     if (scenario.min_delay_seconds != null) v.min_delay_seconds = Math.max(0, scenario.min_delay_seconds);
     if (scenario.max_delay_seconds != null) v.max_delay_seconds = Math.max(0, scenario.max_delay_seconds);
     if (scenario.min_delay_ms != null) v.min_delay_ms = Math.max(0, scenario.min_delay_ms);
-    if (scenario.rearm_after_dismissal_ms != null) v.rearm_after_dismissal_ms = Math.max(0, scenario.rearm_after_dismissal_ms);
+    if (scenario.rearm_after_dismissal_ms != null)
+      v.rearm_after_dismissal_ms = Math.max(0, scenario.rearm_after_dismissal_ms);
     if (scenario.cover_selector != null) v.cover_selector = String(scenario.cover_selector);
     if (scenario.max_delay_ms != null) {
       v.max_delay_ms = clamp(Math.max(0, scenario.max_delay_ms), 0, SAFETY_CAP_MS);
       if (scenario.max_delay_ms > SAFETY_CAP_MS) {
-        logEvent({ scenario: name, action: 'validation_warning', result: `max_delay_ms clamped from ${scenario.max_delay_ms} to ${SAFETY_CAP_MS}` });
+        logEvent({
+          scenario: name,
+          action: 'validation_warning',
+          result: `max_delay_ms clamped from ${scenario.max_delay_ms} to ${SAFETY_CAP_MS}`,
+        });
       }
     }
 
@@ -53,11 +58,21 @@ function validateConfig(config) {
     if (name === 'slow_response' || name === 'slow_responses') {
       const origMin = v.min_delay_ms;
       const origMax = v.max_delay_ms;
-      v.min_delay_ms = Math.max(SLOW_RESPONSE_MIN_MS, Math.min(SLOW_RESPONSE_MAX_MS, v.min_delay_ms ?? SLOW_RESPONSE_MIN_MS));
-      v.max_delay_ms = Math.max(SLOW_RESPONSE_MIN_MS, Math.min(SLOW_RESPONSE_MAX_MS, v.max_delay_ms ?? SLOW_RESPONSE_MAX_MS));
+      v.min_delay_ms = Math.max(
+        SLOW_RESPONSE_MIN_MS,
+        Math.min(SLOW_RESPONSE_MAX_MS, v.min_delay_ms ?? SLOW_RESPONSE_MIN_MS),
+      );
+      v.max_delay_ms = Math.max(
+        SLOW_RESPONSE_MIN_MS,
+        Math.min(SLOW_RESPONSE_MAX_MS, v.max_delay_ms ?? SLOW_RESPONSE_MAX_MS),
+      );
       if (v.min_delay_ms > v.max_delay_ms) v.min_delay_ms = v.max_delay_ms;
       if (origMin !== v.min_delay_ms || origMax !== v.max_delay_ms) {
-        logEvent({ scenario: name, action: 'hard_cap_applied', result: `delay clamped to [${SLOW_RESPONSE_MIN_MS}, ${SLOW_RESPONSE_MAX_MS}]ms (was [${origMin}, ${origMax}])` });
+        logEvent({
+          scenario: name,
+          action: 'hard_cap_applied',
+          result: `delay clamped to [${SLOW_RESPONSE_MIN_MS}, ${SLOW_RESPONSE_MAX_MS}]ms (was [${origMin}, ${origMax}])`,
+        });
       }
     }
 

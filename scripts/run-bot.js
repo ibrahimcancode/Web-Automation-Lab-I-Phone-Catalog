@@ -17,5 +17,9 @@ child.on('exit', (code) => {
   process.exit(code ?? 1);
 });
 
-process.on('SIGINT', () => { child.kill('SIGINT'); });
-process.on('SIGTERM', () => { child.kill('SIGTERM'); });
+process.on('SIGINT', () => {
+  child.kill('SIGINT');
+});
+process.on('SIGTERM', () => {
+  child.kill('SIGTERM');
+});

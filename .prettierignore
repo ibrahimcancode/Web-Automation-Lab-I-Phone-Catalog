@@ -1,0 +1,9 @@
+node_modules/
+dist/
+runs/
+test-results/
+playwright-report/
+blob-report/
+iphone-catalog/node_modules/
+iphone-catalog/dist/
+package-lock.json

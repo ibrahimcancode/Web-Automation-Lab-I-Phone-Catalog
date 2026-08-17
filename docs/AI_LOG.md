@@ -6,24 +6,28 @@
 ---
 
 ### Entry W1-1 — Week 1: spec drafting and chaos engine design
+
 - **Trying to do:** Draft the master specification and chaos engine design contract for a local sandbox site.
 - **Tool/prompt:** opencode; given the internship brief and requirements.
 - **What it got right:** Produced a clear 4-week milestone plan, chaos engine spec with determinism contract, and scenario definitions.
 - **What I learned:** Starting with the spec prevented scope creep during implementation.
 
 ### Entry W1-2 — Week 1: sandbox site + chaos engine implementation
+
 - **Trying to do:** Build the React/Vite iPhone catalog with the chaos engine (cookie banner, newsletter popup, simulated captcha, server errors).
 - **Tool/prompt:** opencode; given the chaos engine spec and the React/Vite scaffold.
 - **What it got right:** The chaos engine's `should_trigger()` idempotent pattern and per-navigation decision cache kept scenarios deterministic and debuggable.
 - **What I learned:** Vite middleware is the right place for server-side chaos (server errors, slow responses) since React components can't intercept HTTP responses.
 
 ### Entry W1-3 — Week 1: model data switch and image generation
+
 - **Trying to do:** Populate the catalog with 43 real iPhone models and generate placeholder images.
 - **Tool/prompt:** opencode; helped generate the data model and image placeholders.
 - **What it got right:** Using a JSON data file for models kept the catalog data-driven and easy to extend.
 - **What I learned:** 43 models slightly exceeds the brief's 20-40 range but provides a more realistic dataset for the automation bot.
 
 ### Entry W1-4 — Week 1: home page images and final polish
+
 - **Trying to do:** Finalize the home page layout with model images and links.
 - **Tool/prompt:** opencode; given the existing React components and routing.
 - **What it got right:** The React Router setup with nested routes (`/model/:slug`) gave the bot a realistic multi-page navigation challenge.
@@ -31,6 +35,7 @@
 ---
 
 ### Entry W2-1 — Week 2 baseline bot, evidence infra, and centralized selectors
+
 - **Trying to do:** Stand up `bot/` as a peer package (no coupling to the sandbox): a happy-path
   workflow (home → catalog → load-more → each detail page → extract fields → `results.json`), plus
   `reporting.js` (JSON-lines events, anomaly screenshots, `buildSummary()` run summary with a
@@ -47,6 +52,7 @@
   stale by a full migration.
 
 ### Entry W2-2 — First disruption handlers + the handler registry
+
 - **Trying to do:** Add the four Week 2 handlers (cookie banner, newsletter popup, simulated captcha,
   server errors) as small `detect → recover` modules registered through a shared registry, so Week 3
   adds scenarios by adding modules, not by restructuring `run.js`/`workflow.js`.
@@ -65,6 +71,7 @@
   lazy and idempotent.
 
 ### Entry W2-3 — Week 2 tests and scenario-flake debugging
+
 - **Trying to do:** Create the three test tiers (unit, happy-path, scenario) that boot the real Vite
   sandbox with a per-test `VITE_CHAOS_JSON` override, and get all of them green.
 - **Tool/prompt:** opencode; helped author `tests/helpers/site.js` (spawn Vite, wait until ready),
@@ -74,7 +81,7 @@
   (`random_mode: false`).
 - **What it got wrong / had to change:** Three real bugs surfaced by the tests: (1) Vite's default
   `localhost` binding resolved to IPv6 `::1` while the test helper probed `127.0.0.1` — fixed by
-  binding the dev server to `127.0.0.1` explicitly; (2) the newsletter modal only arms ~3s *after* the
+  binding the dev server to `127.0.0.1` explicitly; (2) the newsletter modal only arms ~3s _after_ the
   cookie banner is dismissed (sandbox collision rule), so the full-workflow sweep left each page before
   the modal appeared — reworked that scenario into a targeted flow (clear cookie → wait for the delayed
   modal → sweep); (3) the navigation guard never emitted a `detected` event, so the server-error
@@ -84,23 +91,25 @@
   exists in the summary should actually be emitted somewhere in the code path.
 
 ### Entry W2-4 — Combination-run hardening (caught by §4.12 verification)
+
 - **Trying to do:** Verify MASTER_SPEC §4.12 criterion "no unhandled exceptions or infinite hangs when
   any combination of the 4 scenarios is forced on" by running all four simultaneously
   (`random_mode: false`).
 - **What happened:** With all four enabled, the newsletter popup (which re-arms ~3s after each page
-  load, since the cookie banner is session-once) appeared *while* the bot was clicking "Load more" on
+  load, since the cookie banner is session-once) appeared _while_ the bot was clicking "Load more" on
   the catalog page. The popup overlay intercepted the pointer events, the click timed out after 10 s,
   and the run crashed with an unhandled `TimeoutError` (exit 2).
 - **What I changed:** Made the interactive step overlay-aware: `clickThroughObstacles()` in
   `workflow.js` runs a cheap, detection-based re-sweep (`quickSweep()`) after any click failure and
   retries, bounded — so a genuine non-overlay failure still throws instead of looping. Applied to the
   "Load more" button, the only pointer-interactive workflow step.
-- **What I learned:** A delayed overlay can land *during* an action, not just before a step — so
+- **What I learned:** A delayed overlay can land _during_ an action, not just before a step — so
   overlapping scenarios catch timing races that isolated scenario tests never will. The §4.12
   "combination forced on" check is a genuinely different (and valuable) test than the per-scenario
   suite.
 
 ### Entry W3-1 — Scenario 5: sandbox simulation + pure duration classification + navigation handler
+
 - **Trying to do:** Start Week 3 with Scenario 5 (slow responses / timeouts) — a genuine delayed
   response the bot can observe and classify, without any fixed sleeps.
 - **Tool/prompt:** opencode, given the milestone brief (add `slow_responses` to the config, simulate a
@@ -125,6 +134,7 @@
   against the configured threshold.
 
 ### Entry W3-2 — Scenario 5 test, full-suite verification, and a pre-existing all-four flake
+
 - **Trying to do:** Add a deterministic Scenario 5 scenario test (every page load delayed, bot must
   detect + record + continue without hanging) and keep the entire 34-test suite green.
 - **Tool/prompt:** opencode; test mirrors the Week 2 scenario-tier pattern (`VITE_CHAOS_JSON` override,
@@ -145,6 +155,7 @@
   the delay draw) as a known source of flake for the all-four tier.
 
 ### Entry W3-3 — Scenario 6: unexpected redirects — fixing the handoff and closing the test
+
 - **Trying to do:** Complete the Week 3 Scenario 6 handoff from the previous agent (Antigravity), which
   had partially implemented the sandbox redirect (ChaosProvider + PromoPage + config) and the bot-side
   `redirect_handler.js`, but left the test failing.
@@ -152,7 +163,7 @@
 - **What I found:** Root cause was `bot/workflow.js` `navigateWithGuard` calling
   `handler.detect({ page, response, error, attempt, navigationMs })` **without** the `url` parameter,
   so `redirect_handler.detect` (which needs the intended destination URL to detect a wrong-page landing)
-  always received `undefined` and returned `false`. The browser *did* redirect to `/promo` (evidenced by
+  always received `undefined` and returned `false`. The browser _did_ redirect to `/promo` (evidenced by
   `cards=0` on the catalog page), but the bot never detected or recovered from it.
 - **What I fixed:** Added `url` to the `detect` context in `navigateWithGuard`. Removed a debug
   `console.log`. Updated three unit tests (`test_unit_week2.spec.js` x2, `test_unit_week3.spec.js` x1)
@@ -167,11 +178,12 @@
   noisy and leaks resources; the test now runs clean with only `runBotOnce`.
 
 ### Entry W3-4 — Scenario 7: DOM / selector drift — fallback chains, bounded attempts, and the waitForFunction arg trap
+
 - **Trying to do:** Complete the Week 3 Scenario 7 handoff: sandbox-side alternate DOM variants
   (`alt1`/`alt2` class names per page, set via `document.body.dataset.chaosDomDrift` before pages
   render) and bot-side recovery through fallback selector chains, with deterministic evidence.
 - **Tool/prompt:** opencode; phase-1 audit of the partial handoff, then implement + verify.
-- **What I changed:** (1) `DomDrift.jsx` now picks a *non-primary* variant deterministically (before,
+- **What I changed:** (1) `DomDrift.jsx` now picks a _non-primary_ variant deterministically (before,
   it could pick `primary`, which is indistinguishable from no drift) and exposes
   `getCurrentDomDriftVariant()`; `ChaosProvider` sets the body dataset during render so every page
   reads the same variant. (2) `Catalog`/`ModelDetail`/`Home` render meaningfully different classes
@@ -198,6 +210,7 @@
   screenshots. Full suite: 54/54 (unit + happy path + scenarios 1–7 + all-four).
 
 ### Entry W3-5 — Scenario 8: blocked clicks + the all-eight chaos gauntlet
+
 - **Trying to do:** Close out Week 3: Scenario 8 (blocked/intercepted clicks) end-to-end, then the
   §5 Phase 3.4 "chaos gauntlet" — the real workflow in **random mode**, all 8 scenarios enabled,
   fixed seeds, asserting a complete and correct result.
@@ -219,13 +232,13 @@
   `priority: 300` and sorting by priority. (b) **The gauntlet caught a real handler-interaction bug
   my first seed-42 simulation missed:** delay pre-draws shift the PRNG sequence, so the actual
   nav-1 activations are `newsletter_popup`, `server_errors`, `unexpected_redirect` (not the
-  naïvely-computed set). `navigateWithGuard` `break`s after the first *non-retry* claim, so
+  naïvely-computed set). `navigateWithGuard` `break`s after the first _non-retry_ claim, so
   `slow_responses` (detected by raw duration on the 4.7s load) returned before `unexpected_redirect`
   ever ran — the late client-side redirect to `/promo` slipped through and the run stalled on a
   blank page. Fixed by continuing the nav-handler loop past non-retry claims and giving the
   redirect handler a wider window (6.5s) on slow loads. (c) The default 60s Playwright test timeout
   was too small for a ~1.5m gauntlet run — raised per-test to 240s.
-- **What I learned:** PRNG decision sets must be simulated *with* the interleaved delay pre-draws
+- **What I learned:** PRNG decision sets must be simulated _with_ the interleaved delay pre-draws
   (active scenarios consume extra draws, shifting every later roll); and a "recovered" slow load can
   still be mid-mount — the navigation guard needs a second pass over the remaining handlers so
   late-appearing disruptions aren't masked by an earlier non-retry recovery.
@@ -238,26 +251,30 @@
 ---
 
 ### Entry W4-1 — Week 4: Visual traffic-light CAPTCHA (M8)
+
 - **Trying to do:** Replace the arithmetic CAPTCHA (`What is 7 + 3?`) with a visual 3x3 traffic-light grid that the bot solves via pixel analysis.
 - **Tool/prompt:** opencode; given the existing SimulatedCaptcha.jsx and captcha_handler.js.
 - **What it got right:** The sandbox renders SVG traffic lights + distractor scenes in a 3x3 grid; the bot screenshots each tile, analyzes RGB channels (red R>180/G<100/B<100, yellow R>180/G>140/B<80, green R<100/G>130/B<100), and selects tiles with confidence > 0.5. Zero answer leakage via DOM attributes.
 - **What I had to change:** (a) The old `parseMathQuestion` export was still imported by unit tests — re-exported as a legacy utility to avoid weakening tests. (b) Selector map tests referenced old `checkbox`/`question`/`input`/`error` keys — updated to `grid`/`tile`. (c) The handler ctx didn't pass `reporter` — fixed in `sweepPass()`.
 
 ### Entry W4-2 — Week 4: Stretch scenarios — rate limiting + session expiry (M9)
+
 - **Trying to do:** Add HTTP 429 rate limiting and session expiry as the 9th and 10th chaos scenarios.
 - **Tool/prompt:** opencode; given the existing Vite middleware pattern and handler registry.
 - **What it got right:** Both follow the established patterns exactly: Vite server middleware for sandbox simulation, navigation-type bot handlers registered via `registerHandler()`. The chaos demo config now includes all 10 scenarios.
 - **What I had to change:** (a) Initial `rate_limit_handler.js` imported `retry` from `backoff.js` which doesn't exist — rewrote to use inline `setTimeout` + `page.reload()`. (b) `buildSummary()` had a hardcoded `scenarioNames` array — added the two new names. (c) Navigation guard didn't pass `reporter` to handler ctx — fixed. (d) Handler priorities needed ordering: rate_limiting(85) < session_expiry(90) < server_errors(100).
 
 ### Entry W4-3 — Week 4: Observability — computeMetrics + writeTrace (M10)
+
 - **Trying to do:** Add structured metrics and human-readable trace log to the run summary.
 - **Tool/prompt:** opencode; given the existing reporting.js and workflow.js.
 - **What it got right:** `computeMetrics(events)` is a pure function deriving navigation timing, item extraction timing, per-scenario recovery timing, phase timing, and disruption counts from the event log. `writeTrace()` produces a column-aligned trace log alongside the JSONL. Both are attached to `summary.metrics` in `buildSummary()`.
 - **What I had to change:** Added `navigated` events to `navigateWithGuard()` (both no-handler and post-recovery paths) so `computeMetrics` has timing data.
 
 ### Entry W4-4 — Week 4: Final test run — 61 unit tests passing
+
 - **Trying to do:** Verify all unit tests pass after Week 4 changes.
 - **Result:** 61/61 unit tests pass in ~2.6s. 11 new tests for stretch scenarios. Updated handler registry, navigation handler ordering, and selector map tests.
 - **What I learned:** Each new scenario handler requires coordinated updates across: handler module, handler registry, selector map, unit tests, chaos config, Vite middleware, and documentation.
 
-*(Add 2–3 entries per week going forward, per the brief's cadence.)*
+_(Add 2–3 entries per week going forward, per the brief's cadence.)_

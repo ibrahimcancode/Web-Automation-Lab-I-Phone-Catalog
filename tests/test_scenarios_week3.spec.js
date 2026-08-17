@@ -67,15 +67,16 @@ test.describe('Scenario: slow_responses', () => {
 test.describe('Scenario: unexpected_redirect', () => {
   let site;
   test.beforeAll(async () => {
-    site = await startSite(
-      configFor({ unexpected_redirect: { enabled: true, probability: 1.0 } }),
-      { port: 5227 },
-    );
+    site = await startSite(configFor({ unexpected_redirect: { enabled: true, probability: 1.0 } }), { port: 5227 });
   });
   test.afterAll(async () => site?.close());
 
   test('bot detects wrong destination, returns to target, and passes with valid extraction', async () => {
-    const page = await (await import('../bot/browser.js')).createSession({ headless: true, baseUrl: site.baseUrl }).then((s) => s.page);
+    const page = await (
+      await import('../bot/browser.js')
+    )
+      .createSession({ headless: true, baseUrl: site.baseUrl })
+      .then((s) => s.page);
     await page.goto(site.baseUrl + '/');
     const windowConfig = await page.evaluate(() => window.__CHAOS_CONFIG__);
     console.log('WINDOW CHAOS CONFIG IN BROWSER:', windowConfig);
@@ -102,10 +103,7 @@ test.describe('Scenario: unexpected_redirect', () => {
 test.describe('Scenario: dom_drift', () => {
   let site;
   test.beforeAll(async () => {
-    site = await startSite(
-      configFor({ dom_drift: { enabled: true, probability: 1.0 } }),
-      { port: 5228 },
-    );
+    site = await startSite(configFor({ dom_drift: { enabled: true, probability: 1.0 } }), { port: 5228 });
   });
   test.afterAll(async () => site?.close());
 

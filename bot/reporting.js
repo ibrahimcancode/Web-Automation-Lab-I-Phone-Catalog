@@ -38,7 +38,16 @@ export class Reporter {
     await mkdir(path.join(this.runDir, 'screenshots'), { recursive: true });
   }
 
-  async event({ scenario, action, outcome, duration_ms = null, step = null, item_id = null, url = null, detail = null }) {
+  async event({
+    scenario,
+    action,
+    outcome,
+    duration_ms = null,
+    step = null,
+    item_id = null,
+    url = null,
+    detail = null,
+  }) {
     const entry = {
       timestamp: new Date().toISOString(),
       scenario,
@@ -145,9 +154,7 @@ export function computeMetrics(events) {
   }
 
   // Disruption summary
-  const disruptionEvents = events.filter((e) =>
-    e.action === 'detected' || e.action === 'recovered',
-  );
+  const disruptionEvents = events.filter((e) => e.action === 'detected' || e.action === 'recovered');
   const disruptionCounts = {};
   for (const ev of disruptionEvents) {
     if (!disruptionCounts[ev.scenario]) disruptionCounts[ev.scenario] = { detected: 0, resolved: 0 };
@@ -199,11 +206,7 @@ export async function writeTrace(runDir, events) {
     `# ${'─'.repeat(90)}`,
   ];
 
-  await writeFile(
-    path.join(runDir, 'trace.log'),
-    [...header, ...lines, ''].join('\n'),
-    'utf8',
-  );
+  await writeFile(path.join(runDir, 'trace.log'), [...header, ...lines, ''].join('\n'), 'utf8');
 }
 
 // ── Existing: Summary Builder ───────────────────────────────────────────

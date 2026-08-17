@@ -40,8 +40,7 @@ const handler = {
         for (const el of els) {
           const r = el.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) continue;
-          const overlapping =
-            r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top;
+          const overlapping = r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top;
           if (overlapping) return true;
         }
         return false;

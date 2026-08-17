@@ -15,11 +15,17 @@ const SPA_ROUTES = /^\/($|catalog|model\/|compare|favorites)/;
 function loadConfig() {
   const override = process.env.VITE_CHAOS_JSON;
   if (override) {
-    try { return JSON.parse(override); } catch { /* fall through */ }
+    try {
+      return JSON.parse(override);
+    } catch {
+      /* fall through */
+    }
   }
   try {
     return JSON.parse(readFileSync(path.join(__dirname, 'src', 'chaos', 'chaos.json'), 'utf8'));
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function isHtmlRequest(req) {
@@ -59,7 +65,7 @@ export default function rateLimitMiddleware() {
           res.setHeader('Content-Type', 'text/html');
           res.end(
             `<!doctype html><html><head><title>429 Too Many Requests</title></head>` +
-            `<body><h1>429 Too Many Requests</h1><p>Rate limited. Retry after ${retryAfter}s.</p></body></html>`,
+              `<body><h1>429 Too Many Requests</h1><p>Rate limited. Retry after ${retryAfter}s.</p></body></html>`,
           );
           return undefined;
         }

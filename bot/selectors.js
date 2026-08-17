@@ -60,11 +60,7 @@ export const selectors = {
       '.page-detail-alt1 .detail-header-alt1 .tier-badge-alt1',
       '.page-detail-alt2 .detail-header-alt2 .tier-badge-alt2',
     ],
-    year: [
-      '.page-detail .detail-year',
-      '.page-detail-alt1 .detail-year-alt1',
-      '.page-detail-alt2 .detail-year-alt2',
-    ],
+    year: ['.page-detail .detail-year', '.page-detail-alt1 .detail-year-alt1', '.page-detail-alt2 .detail-year-alt2'],
     priceLabel: [
       '.page-detail .price-label',
       '.page-detail-alt1 .price-label-alt1',
@@ -85,11 +81,7 @@ export const selectors = {
       '.page-detail-alt1 .color-label-alt1',
       '.page-detail-alt2 .color-label-alt2',
     ],
-    specSheet: [
-      '.page-detail .spec-sheet',
-      '.page-detail-alt1 .spec-sheet-alt1',
-      '.page-detail-alt2 .spec-sheet-alt2',
-    ],
+    specSheet: ['.page-detail .spec-sheet', '.page-detail-alt1 .spec-sheet-alt1', '.page-detail-alt2 .spec-sheet-alt2'],
     keyFeatures: [
       '.page-detail .key-features li',
       '.page-detail-alt1 .key-features-alt1 li',

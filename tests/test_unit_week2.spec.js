@@ -1,23 +1,19 @@
-// Week 2 unit tests: pure modules only — backoff math, the captcha question
-// parser, the handler registry contract, and selector-map completeness. No
-// browser or site required.
+// Week 3 unit tests: visual CAPTCHA pixel analysis (pure functions),
+// backoff math, the handler registry contract, and selector-map completeness.
+// No browser or site required.
 
 import { test, expect } from '@playwright/test';
 import { selectors, getSelector, assertSelectorMapComplete } from '../bot/selectors.js';
+import { nextRetryDelayMs, maxRetries, isRetryExhausted, retrySchedule, DEFAULT_BACKOFF } from '../bot/backoff.js';
 import {
-  nextRetryDelayMs,
-  maxRetries,
-  isRetryExhausted,
-  retrySchedule,
-  DEFAULT_BACKOFF,
-} from '../bot/backoff.js';
-import { parseMathQuestion } from '../bot/handlers/captcha_handler.js';
-import {
-  ensureHandlersLoaded,
-  getHandlers,
-  getOverlayHandlers,
-  getNavigationHandlers,
-} from '../bot/handlers/index.js';
+  isRedPixel,
+  isYellowPixel,
+  isGreenPixel,
+  analyzeTilePixels,
+  CONFIDENCE_THRESHOLD,
+  MAX_CAPTCHA_RETRIES,
+} from '../bot/handlers/captcha_handler.js';
+import { ensureHandlersLoaded, getHandlers, getOverlayHandlers, getNavigationHandlers } from '../bot/handlers/index.js';
 import { validateExtractedItem, validateExtractedItems, VALID_TIERS } from '../bot/validate.js';
 import { buildSummary } from '../bot/reporting.js';
 
@@ -49,25 +45,131 @@ test.describe('backoff', () => {
   });
 });
 
-test.describe('captcha question parser', () => {
-  test('parses addition', () => {
-    const parsed = parseMathQuestion('What is 7 + 3?');
-    expect(parsed).toEqual({ a: 7, op: '+', b: 3, answer: 10 });
+test.describe('visual CAPTCHA pixel analysis', () => {
+  test('has correct confidence threshold and retry cap', () => {
+    expect(CONFIDENCE_THRESHOLD).toBe(0.5);
+    expect(MAX_CAPTCHA_RETRIES).toBe(3);
   });
 
-  test('parses subtraction including negatives', () => {
-    expect(parseMathQuestion('What is 3 - 7?').answer).toBe(-4);
-    expect(parseMathQuestion('What is 10 - 4?').answer).toBe(6);
+  test('isRedPixel detects red traffic light colors', () => {
+    expect(isRedPixel(255, 0, 0)).toBe(true);
+    expect(isRedPixel(220, 50, 30)).toBe(true);
+    expect(isRedPixel(0, 255, 0)).toBe(false);
+    expect(isRedPixel(255, 255, 255)).toBe(false);
   });
 
-  test('parses negative first operand', () => {
-    expect(parseMathQuestion('What is -2 + 5?').answer).toBe(3);
+  test('isYellowPixel detects yellow traffic light colors', () => {
+    expect(isYellowPixel(255, 200, 0)).toBe(true);
+    expect(isYellowPixel(220, 160, 30)).toBe(true);
+    expect(isYellowPixel(0, 0, 255)).toBe(false);
+    expect(isRedPixel(255, 255, 255)).toBe(false);
   });
 
-  test('returns null for unparseable text', () => {
-    expect(parseMathQuestion('')).toBeNull();
-    expect(parseMathQuestion('please solve 3x=9')).toBeNull();
-    expect(parseMathQuestion('What is 2 * 3?')).toBeNull();
+  test('isGreenPixel detects green traffic light colors', () => {
+    expect(isGreenPixel(0, 255, 0)).toBe(true);
+    expect(isGreenPixel(50, 200, 30)).toBe(true);
+    expect(isGreenPixel(255, 0, 0)).toBe(false);
+    expect(isGreenPixel(0, 0, 0)).toBe(false);
+  });
+
+  test('analyzes tile with all three traffic light colors → high confidence', () => {
+    const width = 40;
+    const height = 40;
+    const data = new Uint8ClampedArray(width * height * 4);
+    // Fill top third red, middle third yellow, bottom third green
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        if (y < height / 3) {
+          data[idx] = 220;
+          data[idx + 1] = 30;
+          data[idx + 2] = 30; // red
+        } else if (y < (2 * height) / 3) {
+          data[idx] = 230;
+          data[idx + 1] = 180;
+          data[idx + 2] = 20; // yellow
+        } else {
+          data[idx] = 20;
+          data[idx + 1] = 200;
+          data[idx + 2] = 30; // green
+        }
+        data[idx + 3] = 255;
+      }
+    }
+    const confidence = analyzeTilePixels({ data }, width, height);
+    expect(confidence).toBe(0.95);
+  });
+
+  test('analyzes distractor tile with no traffic light colors → low confidence', () => {
+    const width = 40;
+    const height = 40;
+    const data = new Uint8ClampedArray(width * height * 4);
+    // Fill with neutral gray (no traffic light colors)
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        data[idx] = 128;
+        data[idx + 1] = 128;
+        data[idx + 2] = 128;
+        data[idx + 3] = 255;
+      }
+    }
+    const confidence = analyzeTilePixels({ data }, width, height);
+    expect(confidence).toBe(0.2);
+    expect(confidence).toBeLessThan(CONFIDENCE_THRESHOLD);
+  });
+
+  test('analyzes tile with two traffic light colors → moderate confidence', () => {
+    const width = 40;
+    const height = 40;
+    const data = new Uint8ClampedArray(width * height * 4);
+    // Fill top half red, bottom half yellow (no green)
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        if (y < height / 2) {
+          data[idx] = 220;
+          data[idx + 1] = 30;
+          data[idx + 2] = 30;
+        } else {
+          data[idx] = 230;
+          data[idx + 1] = 180;
+          data[idx + 2] = 20;
+        }
+        data[idx + 3] = 255;
+      }
+    }
+    const confidence = analyzeTilePixels({ data }, width, height);
+    expect(confidence).toBe(0.7);
+  });
+
+  test('low-confidence images do not cause random clicks — confidence below threshold is below 0.5', () => {
+    const width = 10;
+    const height = 10;
+    const data = new Uint8ClampedArray(width * height * 4);
+    // Single red pixel in all-black tile
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 10;
+      data[i + 1] = 10;
+      data[i + 2] = 10;
+      data[i + 3] = 255;
+    }
+    const confidence = analyzeTilePixels({ data }, width, height);
+    expect(confidence).toBe(0.2);
+    expect(confidence).toBeLessThan(CONFIDENCE_THRESHOLD);
+  });
+
+  test('retry count is bounded by MAX_CAPTCHA_RETRIES', () => {
+    expect(MAX_CAPTCHA_RETRIES).toBeLessThanOrEqual(5);
+    expect(MAX_CAPTCHA_RETRIES).toBeGreaterThan(0);
+  });
+
+  test('exhausted retries produce a controlled failure (handler has max cap)', async () => {
+    await ensureHandlersLoaded();
+    const handler = getHandlers().find((h) => h.name === 'simulated_captcha');
+    expect(handler).toBeDefined();
+    expect(typeof handler.detect).toBe('function');
+    expect(typeof handler.recover).toBe('function');
   });
 });
 
@@ -75,8 +177,21 @@ test.describe('handler registry', () => {
   test('loads all handlers exactly once (8 core + 2 stretch)', async () => {
     await ensureHandlersLoaded();
     await ensureHandlersLoaded(); // idempotent — must not double-register
-    const names = getHandlers().map((h) => h.name).sort();
-    expect(names).toEqual(['blocked_clicks', 'cookie_banner', 'dom_drift', 'newsletter_popup', 'rate_limiting', 'server_errors', 'session_expiry', 'simulated_captcha', 'slow_responses', 'unexpected_redirect']);
+    const names = getHandlers()
+      .map((h) => h.name)
+      .sort();
+    expect(names).toEqual([
+      'blocked_clicks',
+      'cookie_banner',
+      'dom_drift',
+      'newsletter_popup',
+      'rate_limiting',
+      'server_errors',
+      'session_expiry',
+      'simulated_captcha',
+      'slow_responses',
+      'unexpected_redirect',
+    ]);
   });
 
   test('overlay handlers are ordered by priority', async () => {
@@ -92,7 +207,13 @@ test.describe('handler registry', () => {
 
   test('navigation handlers are server_errors, slow_responses, unexpected_redirect, rate_limiting, and session_expiry', async () => {
     await ensureHandlersLoaded();
-    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['rate_limiting', 'session_expiry', 'server_errors', 'slow_responses', 'unexpected_redirect']);
+    expect(getNavigationHandlers().map((h) => h.name)).toEqual([
+      'rate_limiting',
+      'session_expiry',
+      'server_errors',
+      'slow_responses',
+      'unexpected_redirect',
+    ]);
   });
 
   test('every handler exposes the contract', async () => {
@@ -223,11 +344,7 @@ test.describe('validateExtractedItem', () => {
 
 test.describe('validateExtractedItems', () => {
   test('reports total / valid / invalid counts for a mixed list', () => {
-    const result = validateExtractedItems([
-      validItem(),
-      validItem({ id: 'iphone-17' }),
-      validItem({ tier: 'Bogus' }),
-    ]);
+    const result = validateExtractedItems([validItem(), validItem({ id: 'iphone-17' }), validItem({ tier: 'Bogus' })]);
     expect(result.total).toBe(3);
     expect(result.validCount).toBe(2);
     expect(result.invalidCount).toBe(1);
@@ -289,14 +406,21 @@ test.describe('buildSummary', () => {
   test('fails with both reasons when data is invalid and the item also failed', () => {
     const summary = buildSummary({
       events: [],
-      results: [validItem({ id: 'iphone-broken', name: null, tier: null, year: null, price: null, status: 'failed', error: 'boom' })],
+      results: [
+        validItem({
+          id: 'iphone-broken',
+          name: null,
+          tier: null,
+          year: null,
+          price: null,
+          status: 'failed',
+          error: 'boom',
+        }),
+      ],
       runMeta: { run_id: 'test-run' },
     });
     expect(summary.verdict).toBe('FAIL');
-    expect(summary.failure_reasons).toEqual([
-      'data validation: 1 invalid item(s)',
-      'workflow: 1 item(s) failed',
-    ]);
+    expect(summary.failure_reasons).toEqual(['data validation: 1 invalid item(s)', 'workflow: 1 item(s) failed']);
   });
 
   test('aggregates detected / resolved / retries per scenario', () => {

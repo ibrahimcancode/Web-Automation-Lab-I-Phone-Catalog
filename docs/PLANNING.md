@@ -60,7 +60,7 @@ Key structural rules (MASTER_SPEC §1.3, §7):
 
 ## 3. Bot Workflow
 
-Chosen workflow (MASTER_SPEC §4.3, Phase 2.1 — option a): *catalog extraction*.
+Chosen workflow (MASTER_SPEC §4.3, Phase 2.1 — option a): _catalog extraction_.
 
 1. Home page — navigate (navigation guard: detect 5xx/network failure → backoff retry).
 2. Catalog page — navigate; reveal all items via "Load more" (overlay-aware clicks).
@@ -72,18 +72,18 @@ Chosen workflow (MASTER_SPEC §4.3, Phase 2.1 — option a): *catalog extraction
 
 ## 4. Ten-Scenario Plan
 
-| # | Scenario | Week | Bot handling (detect → recover) |
-|---|---|---|---|
-| 1 | Random pop-up / modal (newsletter signup) | 1 / 2 | Fill + submit a placeholder email, verify success state, dismiss; bounded retries |
-| 2 | Cookie / consent banner | 1 / 2 | Accept (fallback Reject), verify banner hidden |
-| 3 | Simulated captcha gate | 1 / 2 / 4 | Visual 3x3 traffic-light grid; bot screenshots tiles, analyzes pixel colors (R/Y/G channels), selects correct tiles |
-| 4 | Site down / server errors | 2 | Navigation guard: detect 5xx/network error, exponential backoff retry with hard cap, resume from current item |
-| 5 | Slow responses / timeouts | 3 | Navigation guard: classify load duration (pure `bot/timeouts.js`); on "slow but loaded" record the recovery in place |
-| 6 | Unexpected redirection | 3 | Verify URL/page identity post-navigation; route back |
-| 7 | DOM change / selector drift | 3 | Fallback-chain selectors instead of brittle CSS paths |
-| 8 | Blocked / intercepted clicks | 3 | Detect interception, remove obstruction or alternative action, verify effect |
-| 9 | HTTP 429 rate limiting | 4 | Navigation guard: detect 429, extract Retry-After header, back off, retry |
-| 10 | Session expiry | 4 | Navigation guard: detect interstitial page, click "Continue" to restore session |
+| #   | Scenario                                  | Week      | Bot handling (detect → recover)                                                                                      |
+| --- | ----------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| 1   | Random pop-up / modal (newsletter signup) | 1 / 2     | Fill + submit a placeholder email, verify success state, dismiss; bounded retries                                    |
+| 2   | Cookie / consent banner                   | 1 / 2     | Accept (fallback Reject), verify banner hidden                                                                       |
+| 3   | Simulated captcha gate                    | 1 / 2 / 4 | Visual 3x3 traffic-light grid; bot screenshots tiles, analyzes pixel colors (R/Y/G channels), selects correct tiles  |
+| 4   | Site down / server errors                 | 2         | Navigation guard: detect 5xx/network error, exponential backoff retry with hard cap, resume from current item        |
+| 5   | Slow responses / timeouts                 | 3         | Navigation guard: classify load duration (pure `bot/timeouts.js`); on "slow but loaded" record the recovery in place |
+| 6   | Unexpected redirection                    | 3         | Verify URL/page identity post-navigation; route back                                                                 |
+| 7   | DOM change / selector drift               | 3         | Fallback-chain selectors instead of brittle CSS paths                                                                |
+| 8   | Blocked / intercepted clicks              | 3         | Detect interception, remove obstruction or alternative action, verify effect                                         |
+| 9   | HTTP 429 rate limiting                    | 4         | Navigation guard: detect 429, extract Retry-After header, back off, retry                                            |
+| 10  | Session expiry                            | 4         | Navigation guard: detect interstitial page, click "Continue" to restore session                                      |
 
 Scenarios 5–8 must NOT be started until Week 3 (MASTER_SPEC §0.1, rule 3).
 
@@ -117,17 +117,17 @@ Rules (CHAOS_ENGINE_SPEC §7, §10):
 
 ## 6. Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Handler swallows all exceptions, hiding real bugs | Catch only named exceptions; log unknowns loudly (MASTER_SPEC §4.9) |
-| Mixed sync/async Playwright APIs | One API mode (async) enforced across `bot/` |
-| Fixed `sleep()` creeps in to make a flaky test pass | Treated as a defect; replaced with explicit waits |
-| Retry without a cap → infinite loop on Scenario 4 | Hard cap in `backoff.js`, unit-tested |
-| Newsletter modal rejects the dummy email → hang | Well-formed placeholder + post-submit check + one bounded retry, then fallback close/ESC |
+| Risk                                                        | Mitigation                                                                                  |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Handler swallows all exceptions, hiding real bugs           | Catch only named exceptions; log unknowns loudly (MASTER_SPEC §4.9)                         |
+| Mixed sync/async Playwright APIs                            | One API mode (async) enforced across `bot/`                                                 |
+| Fixed `sleep()` creeps in to make a flaky test pass         | Treated as a defect; replaced with explicit waits                                           |
+| Retry without a cap → infinite loop on Scenario 4           | Hard cap in `backoff.js`, unit-tested                                                       |
+| Newsletter modal rejects the dummy email → hang             | Well-formed placeholder + post-submit check + one bounded retry, then fallback close/ESC    |
 | Combined scenarios race (delayed popup intercepting clicks) | `clickThroughObstacles()` in `workflow.js`: cheap re-sweep + bounded retry on click failure |
-| Timing-coupled scenarios are flaky to test | Deterministic forced-on config (`random_mode=false`) + targeted flows for delayed popups |
-| Docs drift out of sync with handlers | Update `docs/SCENARIOS.md` in the same commit as the handler |
-| Scope creep into Weeks 3–4 | Enforce phase order; completed weeks are immutable unless instructed |
+| Timing-coupled scenarios are flaky to test                  | Deterministic forced-on config (`random_mode=false`) + targeted flows for delayed popups    |
+| Docs drift out of sync with handlers                        | Update `docs/SCENARIOS.md` in the same commit as the handler                                |
+| Scope creep into Weeks 3–4                                  | Enforce phase order; completed weeks are immutable unless instructed                        |
 
 ## 7. Constraints
 

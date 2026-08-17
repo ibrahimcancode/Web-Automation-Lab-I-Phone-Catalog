@@ -48,7 +48,9 @@ test.describe('Scenario: cookie_banner', () => {
 test.describe('Scenario: simulated_captcha', () => {
   let site;
   test.beforeAll(async () => {
-    site = await startSite(configFor({ simulated_captcha: { enabled: true, probability: 1.0, delay_seconds: 1 } }), { port: 5223 });
+    site = await startSite(configFor({ simulated_captcha: { enabled: true, probability: 1.0, delay_seconds: 1 } }), {
+      port: 5223,
+    });
   });
   test.afterAll(async () => site?.close());
 

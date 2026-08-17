@@ -1,10 +1,24 @@
 import modelsData from './models.json';
 
 const REQUIRED_FIELDS = [
-  'id', 'displayName', 'tier', 'generationYear', 'releaseDate',
-  'discontinued', 'chip', 'displayInches', 'displayType', 'camera',
-  'colors', 'variants', 'weightGrams', 'dimensionsMM', 'materials',
-  'heroImage', 'summary', 'keyFeatures',
+  'id',
+  'displayName',
+  'tier',
+  'generationYear',
+  'releaseDate',
+  'discontinued',
+  'chip',
+  'displayInches',
+  'displayType',
+  'camera',
+  'colors',
+  'variants',
+  'weightGrams',
+  'dimensionsMM',
+  'materials',
+  'heroImage',
+  'summary',
+  'keyFeatures',
 ];
 
 const VALID_TIERS = ['SE', 'Standard', 'Mini', 'Plus', 'Air', 'Pro', 'Pro Max'];
@@ -68,12 +82,13 @@ export function getModelBySlug(slug) {
 export function searchModels(query, models = allModels) {
   if (!query) return models;
   const q = query.toLowerCase().trim();
-  return models.filter((m) =>
-    m.displayName.toLowerCase().includes(q) ||
-    m.tier.toLowerCase().includes(q) ||
-    String(m.generationYear).includes(q) ||
-    m.chip.name.toLowerCase().includes(q) ||
-    m.colors.some((c) => c.name.toLowerCase().includes(q))
+  return models.filter(
+    (m) =>
+      m.displayName.toLowerCase().includes(q) ||
+      m.tier.toLowerCase().includes(q) ||
+      String(m.generationYear).includes(q) ||
+      m.chip.name.toLowerCase().includes(q) ||
+      m.colors.some((c) => c.name.toLowerCase().includes(q)),
   );
 }
 
@@ -104,9 +119,15 @@ export function sortModels(sortKey, models = allModels) {
     case 'oldest':
       return sorted.sort((a, b) => a.generationYear - b.generationYear);
     case 'price-asc':
-      return sorted.sort((a, b) => Math.min(...a.variants.map((v) => v.launchPriceUSD)) - Math.min(...b.variants.map((v) => v.launchPriceUSD)));
+      return sorted.sort(
+        (a, b) =>
+          Math.min(...a.variants.map((v) => v.launchPriceUSD)) - Math.min(...b.variants.map((v) => v.launchPriceUSD)),
+      );
     case 'price-desc':
-      return sorted.sort((a, b) => Math.min(...b.variants.map((v) => v.launchPriceUSD)) - Math.min(...a.variants.map((v) => v.launchPriceUSD)));
+      return sorted.sort(
+        (a, b) =>
+          Math.min(...b.variants.map((v) => v.launchPriceUSD)) - Math.min(...a.variants.map((v) => v.launchPriceUSD)),
+      );
     case 'alpha':
       return sorted.sort((a, b) => a.displayName.localeCompare(b.displayName));
     default:
@@ -120,11 +141,15 @@ export function getSimilarModels(modelId, models = allModels) {
 
   const sameTier = models
     .filter((m) => m.id !== modelId && m.tier === model.tier)
-    .sort((a, b) => Math.abs(a.generationYear - model.generationYear) - Math.abs(b.generationYear - model.generationYear));
+    .sort(
+      (a, b) => Math.abs(a.generationYear - model.generationYear) - Math.abs(b.generationYear - model.generationYear),
+    );
 
   const nearbyYear = models
     .filter((m) => m.id !== modelId && Math.abs(m.generationYear - model.generationYear) <= 1)
-    .sort((a, b) => Math.abs(a.generationYear - model.generationYear) - Math.abs(b.generationYear - model.generationYear));
+    .sort(
+      (a, b) => Math.abs(a.generationYear - model.generationYear) - Math.abs(b.generationYear - model.generationYear),
+    );
 
   const candidates = [...sameTier];
   for (const m of nearbyYear) {
@@ -134,7 +159,9 @@ export function getSimilarModels(modelId, models = allModels) {
   if (candidates.length < 4) {
     const remaining = models
       .filter((m) => m.id !== modelId && !candidates.find((c) => c.id === m.id))
-      .sort((a, b) => Math.abs(a.generationYear - model.generationYear) - Math.abs(b.generationYear - model.generationYear));
+      .sort(
+        (a, b) => Math.abs(a.generationYear - model.generationYear) - Math.abs(b.generationYear - model.generationYear),
+      );
     for (const m of remaining) {
       candidates.push(m);
       if (candidates.length >= 4) break;

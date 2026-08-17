@@ -23,7 +23,7 @@
       "enabled": true,
       "probability": 1.0,
       "status_code": 503,
-      "fail_first_n": 2
+      "fail_first_n": 1
     },
     "slow_responses": {
       "enabled": true,
@@ -47,13 +47,13 @@
     "rate_limiting": {
       "enabled": true,
       "probability": 1.0,
-      "fail_first_n": 2,
+      "fail_first_n": 1,
       "retry_after_seconds": 1
     },
     "session_expiry": {
       "enabled": true,
       "probability": 1.0,
-      "trigger_after_navigations": 2
+      "trigger_after_navigations": 10
     }
   }
 }

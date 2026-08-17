@@ -28,7 +28,12 @@
     "heroImage": "/images/iphone-6-hero.svg",
     "gallery": [],
     "summary": "The first large-screen iPhone, introducing a thinner and lighter design with a 4.7-inch display.",
-    "keyFeatures": ["4.7-inch Retina HD display", "Apple A8 chip", "Touch ID fingerprint sensor", "Improved 8MP camera with Focus Pixels"]
+    "keyFeatures": [
+      "4.7-inch Retina HD display",
+      "Apple A8 chip",
+      "Touch ID fingerprint sensor",
+      "Improved 8MP camera with Focus Pixels"
+    ]
   },
   {
     "id": "iphone-6-plus",
@@ -59,7 +64,12 @@
     "heroImage": "/images/iphone-6-plus-hero.svg",
     "gallery": [],
     "summary": "Apple's first phablet with a 5.5-inch display, optical image stabilization, and longer battery life.",
-    "keyFeatures": ["5.5-inch Retina HD display", "Optical image stabilization", "Apple A8 chip", "Enhanced battery life"]
+    "keyFeatures": [
+      "5.5-inch Retina HD display",
+      "Optical image stabilization",
+      "Apple A8 chip",
+      "Enhanced battery life"
+    ]
   },
   {
     "id": "iphone-6s",
@@ -184,7 +194,12 @@
     "heroImage": "/images/iphone-7-hero.svg",
     "gallery": [],
     "summary": "Removed the headphone jack and added water resistance with a solid-state home button.",
-    "keyFeatures": ["Water and dust resistant (IP67)", "Solid-state Home button", "Stereo speakers", "New jet black finish"]
+    "keyFeatures": [
+      "Water and dust resistant (IP67)",
+      "Solid-state Home button",
+      "Stereo speakers",
+      "New jet black finish"
+    ]
   },
   {
     "id": "iphone-7-plus",
@@ -216,7 +231,12 @@
     "heroImage": "/images/iphone-7-plus-hero.svg",
     "gallery": [],
     "summary": "First iPhone with dual cameras, enabling Portrait mode with depth-of-field effects.",
-    "keyFeatures": ["Dual 12MP cameras with Portrait mode", "2x optical zoom", "Water resistant (IP67)", "Longer battery life"]
+    "keyFeatures": [
+      "Dual 12MP cameras with Portrait mode",
+      "2x optical zoom",
+      "Water resistant (IP67)",
+      "Longer battery life"
+    ]
   },
   {
     "id": "iphone-8",
@@ -305,7 +325,12 @@
     "heroImage": "/images/iphone-x-hero.svg",
     "gallery": [],
     "summary": "A revolutionary redesign with edge-to-edge OLED display, Face ID, and gesture-based navigation.",
-    "keyFeatures": ["5.8-inch Super Retina OLED display", "Face ID facial recognition", "Edge-to-edge design", "Gesture-based navigation"]
+    "keyFeatures": [
+      "5.8-inch Super Retina OLED display",
+      "Face ID facial recognition",
+      "Edge-to-edge design",
+      "Gesture-based navigation"
+    ]
   },
   {
     "id": "iphone-xr",
@@ -370,7 +395,12 @@
     "heroImage": "/images/iphone-xs-hero.svg",
     "gallery": [],
     "summary": "Refined the iPhone X design with a faster A12 Bionic, improved cameras, and the first 512GB iPhone.",
-    "keyFeatures": ["5.8-inch Super Retina OLED", "Dual 12MP cameras with Smart HDR", "IP68 water resistance", "512GB storage option"]
+    "keyFeatures": [
+      "5.8-inch Super Retina OLED",
+      "Dual 12MP cameras with Smart HDR",
+      "IP68 water resistance",
+      "512GB storage option"
+    ]
   },
   {
     "id": "iphone-xs-max",
@@ -401,7 +431,12 @@
     "heroImage": "/images/iphone-xs-max-hero.svg",
     "gallery": [],
     "summary": "The biggest iPhone display at the time, combining a 6.5-inch OLED with all the XS improvements.",
-    "keyFeatures": ["6.5-inch Super Retina OLED display", "Largest iPhone display to date", "Dual 12MP cameras", "IP68 water resistance"]
+    "keyFeatures": [
+      "6.5-inch Super Retina OLED display",
+      "Largest iPhone display to date",
+      "Dual 12MP cameras",
+      "IP68 water resistance"
+    ]
   },
   {
     "id": "iphone-11",
@@ -448,7 +483,12 @@
     "chip": { "name": "Apple A13 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 5.8,
     "displayType": "OLED",
-    "camera": { "system": "Triple 12MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "2x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 12MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "2x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 18,
     "colors": [
       { "name": "Midnight Green", "hex": "#2D4A3E" },
@@ -467,7 +507,12 @@
     "heroImage": "/images/iphone-11-pro-hero.svg",
     "gallery": [],
     "summary": "First iPhone with a triple camera system, delivering pro-grade photography with the A13 Bionic.",
-    "keyFeatures": ["Triple 12MP camera system", "Super Retina XDR OLED display", "Night mode on all cameras", "18-hour battery life"]
+    "keyFeatures": [
+      "Triple 12MP camera system",
+      "Super Retina XDR OLED display",
+      "Night mode on all cameras",
+      "18-hour battery life"
+    ]
   },
   {
     "id": "iphone-11-pro-max",
@@ -480,7 +525,12 @@
     "chip": { "name": "Apple A13 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.5,
     "displayType": "OLED",
-    "camera": { "system": "Triple 12MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "2x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 12MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "2x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 20,
     "colors": [
       { "name": "Midnight Green", "hex": "#2D4A3E" },
@@ -499,7 +549,12 @@
     "heroImage": "/images/iphone-11-pro-max-hero.svg",
     "gallery": [],
     "summary": "The ultimate 2019 iPhone, combining the largest display with the longest battery life in the lineup.",
-    "keyFeatures": ["6.5-inch Super Retina XDR display", "Triple 12MP camera system", "20-hour video playback", "Midnight Green color"]
+    "keyFeatures": [
+      "6.5-inch Super Retina XDR display",
+      "Triple 12MP camera system",
+      "20-hour video playback",
+      "Midnight Green color"
+    ]
   },
   {
     "id": "iphone-se-2nd-gen",
@@ -608,7 +663,12 @@
     "chip": { "name": "Apple A14 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.1,
     "displayType": "OLED",
-    "camera": { "system": "Triple 12MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "4x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 12MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "4x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 17,
     "colors": [
       { "name": "Pacific Blue", "hex": "#5B7FA5" },
@@ -640,7 +700,12 @@
     "chip": { "name": "Apple A14 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.7,
     "displayType": "OLED",
-    "camera": { "system": "Triple 12MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "5x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 12MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "5x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 20,
     "colors": [
       { "name": "Pacific Blue", "hex": "#5B7FA5" },
@@ -659,7 +724,12 @@
     "heroImage": "/images/iphone-12-pro-max-hero.svg",
     "gallery": [],
     "summary": "The most advanced iPhone camera system with sensor-shift stabilization and the largest display.",
-    "keyFeatures": ["6.7-inch Super Retina XDR display", "Sensor-shift optical stabilization", "5x optical zoom range", "Largest display on an iPhone"]
+    "keyFeatures": [
+      "6.7-inch Super Retina XDR display",
+      "Sensor-shift optical stabilization",
+      "5x optical zoom range",
+      "Largest display on an iPhone"
+    ]
   },
   {
     "id": "iphone-13",
@@ -740,7 +810,12 @@
     "chip": { "name": "Apple A15 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.1,
     "displayType": "OLED",
-    "camera": { "system": "Triple 12MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "3x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 12MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "3x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 22,
     "colors": [
       { "name": "Sierra Blue", "hex": "#7EAFC4" },
@@ -773,7 +848,12 @@
     "chip": { "name": "Apple A15 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.7,
     "displayType": "OLED",
-    "camera": { "system": "Triple 12MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "3x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 12MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "3x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 28,
     "colors": [
       { "name": "Sierra Blue", "hex": "#7EAFC4" },
@@ -902,7 +982,12 @@
     "chip": { "name": "Apple A16 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.1,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "3x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "3x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 23,
     "colors": [
       { "name": "Deep Purple", "hex": "#594F6B" },
@@ -935,7 +1020,12 @@
     "chip": { "name": "Apple A16 Bionic", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.7,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "3x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "3x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 29,
     "colors": [
       { "name": "Deep Purple", "hex": "#594F6B" },
@@ -955,7 +1045,12 @@
     "heroImage": "/images/iphone-14-pro-max-hero.svg",
     "gallery": [],
     "summary": "The most advanced iPhone display with Dynamic Island, Always-On, and a record-breaking camera system.",
-    "keyFeatures": ["Dynamic Island", "Always-On display", "48MP camera with 2x optical quality", "29-hour battery life"]
+    "keyFeatures": [
+      "Dynamic Island",
+      "Always-On display",
+      "48MP camera with 2x optical quality",
+      "29-hour battery life"
+    ]
   },
   {
     "id": "iphone-15",
@@ -1034,7 +1129,12 @@
     "chip": { "name": "Apple A17 Pro", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.1,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "3x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "3x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 23,
     "colors": [
       { "name": "Blue Titanium", "hex": "#4B6A7E" },
@@ -1067,7 +1167,12 @@
     "chip": { "name": "Apple A17 Pro", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.7,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "5x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "5x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 29,
     "colors": [
       { "name": "Blue Titanium", "hex": "#4B6A7E" },
@@ -1162,7 +1267,12 @@
     "chip": { "name": "Apple A18 Pro", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.3,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "5x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "5x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 27,
     "colors": [
       { "name": "Black Titanium", "hex": "#3A3A3C" },
@@ -1194,7 +1304,12 @@
     "chip": { "name": "Apple A18 Pro", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.9,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "5x", "frontCameraMP": 12 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "5x",
+      "frontCameraMP": 12
+    },
     "batteryVideoPlaybackHours": 33,
     "colors": [
       { "name": "Black Titanium", "hex": "#3A3A3C" },
@@ -1213,7 +1328,12 @@
     "heroImage": "/images/iphone-16-pro-max-hero.svg",
     "gallery": [],
     "summary": "The largest and most capable iPhone display ever, with 33-hour battery life and pro camera system.",
-    "keyFeatures": ["6.9-inch Super Retina XDR display", "33-hour battery life", "5x optical zoom", "4K120 Dolby Vision"]
+    "keyFeatures": [
+      "6.9-inch Super Retina XDR display",
+      "33-hour battery life",
+      "5x optical zoom",
+      "4K120 Dolby Vision"
+    ]
   },
   {
     "id": "iphone-16e",
@@ -1304,7 +1424,12 @@
     "heroImage": "/images/iphone-air-hero.svg",
     "gallery": [],
     "summary": "The thinnest iPhone ever, combining a titanium design with a 6.6-inch display and powerful performance.",
-    "keyFeatures": ["Ultra-thin 5.5mm design", "Titanium build", "6.6-inch ProMotion display", "All-day battery in the thinnest iPhone"]
+    "keyFeatures": [
+      "Ultra-thin 5.5mm design",
+      "Titanium build",
+      "6.6-inch ProMotion display",
+      "All-day battery in the thinnest iPhone"
+    ]
   },
   {
     "id": "iphone-17-pro",
@@ -1316,7 +1441,12 @@
     "chip": { "name": "Apple A19 Pro", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.3,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "5x", "frontCameraMP": 24 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "5x",
+      "frontCameraMP": 24
+    },
     "batteryVideoPlaybackHours": 30,
     "colors": [
       { "name": "Midnight", "hex": "#1A1A1A" },
@@ -1347,7 +1477,12 @@
     "chip": { "name": "Apple A19 Pro", "cpuCores": 6, "gpuCores": 1 },
     "displayInches": 6.9,
     "displayType": "OLED",
-    "camera": { "system": "Triple 48MP", "lenses": ["Wide", "Ultra Wide", "Telephoto"], "maxOpticalZoom": "5x", "frontCameraMP": 24 },
+    "camera": {
+      "system": "Triple 48MP",
+      "lenses": ["Wide", "Ultra Wide", "Telephoto"],
+      "maxOpticalZoom": "5x",
+      "frontCameraMP": 24
+    },
     "batteryVideoPlaybackHours": 35,
     "colors": [
       { "name": "Midnight", "hex": "#1A1A1A" },
@@ -1366,6 +1501,11 @@
     "heroImage": "/images/iphone-17-pro-max-hero.svg",
     "gallery": [],
     "summary": "The ultimate iPhone with the largest display, longest battery life, and most powerful camera system ever.",
-    "keyFeatures": ["6.9-inch Super Retina XDR display", "35-hour battery life", "Most powerful camera system", "A19 Pro chip"]
+    "keyFeatures": [
+      "6.9-inch Super Retina XDR display",
+      "35-hour battery life",
+      "Most powerful camera system",
+      "A19 Pro chip"
+    ]
   }
 ]

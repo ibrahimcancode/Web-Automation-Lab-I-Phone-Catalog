@@ -20,7 +20,9 @@ export default function Header() {
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [drawerOpen]);
 
   const isActive = (path) => location.pathname === path;
@@ -28,11 +30,17 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="header-inner container">
-        <Link to="/" className="logo">iPhone Catalog</Link>
+        <Link to="/" className="logo">
+          iPhone Catalog
+        </Link>
 
         <nav className="desktop-nav" aria-label="Main navigation">
-          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>Home</Link>
-          <Link to="/catalog" className={`nav-link ${isActive('/catalog') ? 'active' : ''}`}>Catalog</Link>
+          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+            Home
+          </Link>
+          <Link to="/catalog" className={`nav-link ${isActive('/catalog') ? 'active' : ''}`}>
+            Catalog
+          </Link>
           <Link to="/compare" className={`nav-link compare-link ${isActive('/compare') ? 'active' : ''}`}>
             Compare
             {compare.length > 0 && <span className="badge">{compare.length}</span>}
@@ -67,8 +75,12 @@ export default function Header() {
         <>
           <div className="drawer-scrim" onClick={() => setDrawerOpen(false)} />
           <nav className="mobile-drawer" aria-label="Mobile navigation">
-            <Link to="/" className="drawer-link">Home</Link>
-            <Link to="/catalog" className="drawer-link">Catalog</Link>
+            <Link to="/" className="drawer-link">
+              Home
+            </Link>
+            <Link to="/catalog" className="drawer-link">
+              Catalog
+            </Link>
             <Link to="/compare" className="drawer-link">
               Compare
               {compare.length > 0 && <span className="badge">{compare.length}</span>}

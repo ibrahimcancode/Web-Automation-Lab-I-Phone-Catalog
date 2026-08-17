@@ -3,16 +3,8 @@
 // scenario. No browser or site required.
 
 import { test, expect } from '@playwright/test';
-import {
-  classifyNavigationDuration,
-  DEFAULT_SLOW_THRESHOLD_MS,
-  DEFAULT_DEADLINE_MS,
-} from '../bot/timeouts.js';
-import {
-  ensureHandlersLoaded,
-  getHandlers,
-  getNavigationHandlers,
-} from '../bot/handlers/index.js';
+import { classifyNavigationDuration, DEFAULT_SLOW_THRESHOLD_MS, DEFAULT_DEADLINE_MS } from '../bot/timeouts.js';
+import { ensureHandlersLoaded, getHandlers, getNavigationHandlers } from '../bot/handlers/index.js';
 import slowResponseHandler from '../bot/handlers/slow_response_handler.js';
 import domDriftHandler from '../bot/handlers/dom_drift_handler.js';
 import blockedClicksHandler from '../bot/handlers/blocked_clicks_handler.js';
@@ -55,7 +47,13 @@ test.describe('slow_responses handler', () => {
   test('is registered as a navigation handler', async () => {
     await ensureHandlersLoaded();
     expect(getHandlers().map((h) => h.name)).toContain('slow_responses');
-    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['rate_limiting', 'session_expiry', 'server_errors', 'slow_responses', 'unexpected_redirect']);
+    expect(getNavigationHandlers().map((h) => h.name)).toEqual([
+      'rate_limiting',
+      'session_expiry',
+      'server_errors',
+      'slow_responses',
+      'unexpected_redirect',
+    ]);
   });
 
   test('detect claims a slow-but-loaded response', () => {
@@ -129,11 +127,7 @@ test.describe('selector fallback chains (Scenario 7)', () => {
       '.catalog-grid-alt1 .product-card-alt1',
       '.product-list.alt2 .product-item.alt2',
     ]);
-    expect(getSelectorChain('catalog.page')).toEqual([
-      '.page-catalog',
-      '.page-catalog-alt1',
-      '.page-catalog-alt2',
-    ]);
+    expect(getSelectorChain('catalog.page')).toEqual(['.page-catalog', '.page-catalog-alt1', '.page-catalog-alt2']);
   });
 
   test('getSelectorChain treats plain string leaves as single-selector chains', () => {
@@ -158,7 +152,12 @@ test.describe('dom_drift handler (Scenario 7)', () => {
     const summary = buildSummary({
       events: [
         { scenario: 'dom_drift', action: 'detected', outcome: 'detected' },
-        { scenario: 'dom_drift', action: 'fallback_used', outcome: 'resolved', detail: 'catalog.card: primary(s) [...] failed → fallback [...]' },
+        {
+          scenario: 'dom_drift',
+          action: 'fallback_used',
+          outcome: 'resolved',
+          detail: 'catalog.card: primary(s) [...] failed → fallback [...]',
+        },
         { scenario: 'dom_drift', action: 'recovered', outcome: 'resolved', detail: 'selector drift: catalog.card' },
       ],
       results: [validItem()],
@@ -219,21 +218,20 @@ test.describe('rate_limiting handler (Scenario 9)', () => {
   });
 
   test('detect claims a 429 response', async () => {
-    expect(await rateLimitHandler.detect({ response: { status: 429 } })).toBe(true);
+    expect(await rateLimitHandler.detect({ response: { status: () => 429 } })).toBe(true);
   });
 
   test('detect ignores non-429 responses', async () => {
-    expect(await rateLimitHandler.detect({ response: { status: 200 } })).toBe(false);
-    expect(await rateLimitHandler.detect({ response: { status: 503 } })).toBe(false);
+    expect(await rateLimitHandler.detect({ response: { status: () => 200 } })).toBe(false);
+    expect(await rateLimitHandler.detect({ response: { status: () => 503 } })).toBe(false);
     expect(await rateLimitHandler.detect({ response: null })).toBe(false);
   });
 
-  test('recover returns resolved after backing off', async () => {
-    const page = { reload: async () => {} };
-    const response = { status: 429, headers: { 'retry-after': '1' } };
-    const reporter = { event: async () => {} };
-    const rec = await rateLimitHandler.recover({ page, response, reporter });
-    expect(rec.outcome).toBe('resolved');
+  test('recover returns retry with backoff waitMs', async () => {
+    const response = { status: () => 429, headers: { 'retry-after': '1' } };
+    const rec = rateLimitHandler.recover({ response });
+    expect(rec.retry).toBe(true);
+    expect(rec.waitMs).toBeGreaterThanOrEqual(1000);
     expect(rec.detail).toMatch(/backoff/);
   });
 
@@ -268,7 +266,6 @@ test.describe('session_expiry handler (Scenario 10)', () => {
   });
 
   test('recover returns resolved after clicking continue', async () => {
-    const navDone = {};
     const page = {
       waitForSelector: async () => ({ click: async () => {} }),
       waitForNavigation: async () => {},
@@ -282,7 +279,12 @@ test.describe('session_expiry handler (Scenario 10)', () => {
     const summary = buildSummary({
       events: [
         { scenario: 'session_expiry', action: 'detected', outcome: 'detected' },
-        { scenario: 'session_expiry', action: 'recovered', outcome: 'resolved', detail: 'clicked continue, session restored' },
+        {
+          scenario: 'session_expiry',
+          action: 'recovered',
+          outcome: 'resolved',
+          detail: 'clicked continue, session restored',
+        },
       ],
       results: [validItem()],
       runMeta: { run_id: 'test-run' },

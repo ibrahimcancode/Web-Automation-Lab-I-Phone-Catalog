@@ -18,11 +18,11 @@ export async function startSite(chaosConfig, { port = 5173, readyTimeoutMs = 60_
     env.VITE_CHAOS_JSON = JSON.stringify(chaosConfig);
   }
 
-  const child = spawn(
-    process.execPath,
-    [viteBin, '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-    { cwd: siteRoot, env, stdio: 'ignore' },
-  );
+  const child = spawn(process.execPath, [viteBin, '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+    cwd: siteRoot,
+    env,
+    stdio: 'ignore',
+  });
 
   const baseUrl = `http://127.0.0.1:${port}`;
   try {

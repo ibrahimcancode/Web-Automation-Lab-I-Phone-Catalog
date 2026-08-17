@@ -6,11 +6,19 @@ import { logEvent } from '../logger.js';
 const SESSION_KEY = 'chaos_cookie_seen';
 
 function isSessionSet() {
-  try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 function setSession() {
-  try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
+  try {
+    sessionStorage.setItem(SESSION_KEY, '1');
+  } catch {
+    /* ignore */
+  }
 }
 
 export function CookieBanner({ onComplete }) {
@@ -35,12 +43,15 @@ export function CookieBanner({ onComplete }) {
     return () => clearTimeout(timer);
   }, [onComplete]);
 
-  const dismiss = useCallback((choice) => {
-    setSession();
-    setVisible(false);
-    logEvent({ scenario: 'cookie_banner', action: 'dismissed', result: choice });
-    onComplete?.(choice);
-  }, [onComplete]);
+  const dismiss = useCallback(
+    (choice) => {
+      setSession();
+      setVisible(false);
+      logEvent({ scenario: 'cookie_banner', action: 'dismissed', result: choice });
+      onComplete?.(choice);
+    },
+    [onComplete],
+  );
 
   if (!visible) return null;
 

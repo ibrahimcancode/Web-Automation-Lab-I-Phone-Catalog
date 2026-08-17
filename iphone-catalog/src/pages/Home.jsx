@@ -6,12 +6,12 @@ import { useState, useEffect } from 'react';
 const FEATURED_SLUGS = ['iphone-17-pro-max', 'iphone-x', 'iphone-se-3rd-gen'];
 
 const tierColors = {
-  'SE': '#636366',
-  'Standard': '#007AFF',
-  'Mini': '#5856D6',
-  'Plus': '#FF9500',
-  'Air': '#AF52DE',
-  'Pro': '#FF2D55',
+  SE: '#636366',
+  Standard: '#007AFF',
+  Mini: '#5856D6',
+  Plus: '#FF9500',
+  Air: '#AF52DE',
+  Pro: '#FF2D55',
   'Pro Max': '#C8102E',
 };
 
@@ -37,7 +37,9 @@ export default function Home() {
         <div className="container">
           <h1>The Complete iPhone Lineup</h1>
           <p>Browse, compare, and find the right iPhone — from the original SE to the latest Pro Max.</p>
-          <Link to="/catalog" className="btn btn-primary">Browse All Models</Link>
+          <Link to="/catalog" className="btn btn-primary">
+            Browse All Models
+          </Link>
         </div>
       </section>
 
@@ -63,13 +65,18 @@ export default function Home() {
                   src={model.heroImage}
                   alt={model.displayName}
                   loading="lazy"
-                  onError={(e) => { e.target.style.display = 'none'; }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
                 />
                 <div className="card-image-fallback">{model.displayName}</div>
               </div>
               <div className="card-body">
                 <div className="card-meta">
-                  <span className="tier-badge" style={{ background: `${tierColors[model.tier]}18`, color: tierColors[model.tier] }}>
+                  <span
+                    className="tier-badge"
+                    style={{ background: `${tierColors[model.tier]}18`, color: tierColors[model.tier] }}
+                  >
                     {model.tier}
                   </span>
                   <span className="card-year">{model.generationYear}</span>

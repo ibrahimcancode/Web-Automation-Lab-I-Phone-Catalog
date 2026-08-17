@@ -6,17 +6,24 @@ function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { favorites: [], compare: [] };
 }
 
 function saveState(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      favorites: state.favorites,
-      compare: state.compare,
-    }));
-  } catch { /* ignore */ }
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        favorites: state.favorites,
+        compare: state.compare,
+      }),
+    );
+  } catch {
+    /* ignore */
+  }
 }
 
 export const useStore = create((set, get) => ({

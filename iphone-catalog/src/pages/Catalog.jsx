@@ -28,7 +28,11 @@ function variantClasses(domVariant) {
     cardLink: isAlt1 ? 'card-link-alt1' : isAlt2 ? 'item-link' : 'card-link',
     cardName: isAlt1 ? 'card-name-alt1' : isAlt2 ? 'item-title alt2' : 'card-name',
     grid: isAlt1 ? 'card-grid-alt1' : isAlt2 ? 'product-grid-alt2' : 'card-grid',
-    loadMore: isAlt1 ? 'btn btn-secondary load-more-alt1' : isAlt2 ? 'btn btn-secondary load-more alt2' : 'btn btn-secondary load-more',
+    loadMore: isAlt1
+      ? 'btn btn-secondary load-more-alt1'
+      : isAlt2
+        ? 'btn btn-secondary load-more alt2'
+        : 'btn btn-secondary load-more',
     emptyState: isAlt1 ? 'empty-state-alt1' : isAlt2 ? 'empty-state-alt2' : 'empty-state',
   };
 }
@@ -56,18 +60,21 @@ export default function Catalog() {
   const removeFromCompare = useStore((s) => s.removeFromCompare);
   const compare = useStore((s) => s.compare);
 
-  const updateParams = useCallback((key, value) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (!value || (Array.isArray(value) && value.length === 0)) {
-        next.delete(key);
-      } else {
-        next.set(key, Array.isArray(value) ? value.join(',') : value);
-      }
-      return next;
-    });
-    setVisibleCount(BATCH_SIZE);
-  }, [setSearchParams]);
+  const updateParams = useCallback(
+    (key, value) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          next.delete(key);
+        } else {
+          next.set(key, Array.isArray(value) ? value.join(',') : value);
+        }
+        return next;
+      });
+      setVisibleCount(BATCH_SIZE);
+    },
+    [setSearchParams],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -88,16 +95,12 @@ export default function Catalog() {
   const hasMore = visibleCount < filtered.length;
 
   const toggleTier = (tier) => {
-    const next = selectedTiers.includes(tier)
-      ? selectedTiers.filter((t) => t !== tier)
-      : [...selectedTiers, tier];
+    const next = selectedTiers.includes(tier) ? selectedTiers.filter((t) => t !== tier) : [...selectedTiers, tier];
     updateParams('tier', next);
   };
 
   const toggleYear = (year) => {
-    const next = selectedYears.includes(year)
-      ? selectedYears.filter((y) => y !== year)
-      : [...selectedYears, year];
+    const next = selectedYears.includes(year) ? selectedYears.filter((y) => y !== year) : [...selectedYears, year];
     updateParams('year', next);
   };
 
@@ -113,12 +116,16 @@ export default function Catalog() {
     <div className={cls.page}>
       <div className="catalog-header">
         <h1>Catalog</h1>
-        <span className="result-count">{filtered.length} model{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="result-count">
+          {filtered.length} model{filtered.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       <div className="catalog-toolbar">
         <div className="search-bar">
-          <label htmlFor="search" className="sr-only">Search models</label>
+          <label htmlFor="search" className="sr-only">
+            Search models
+          </label>
           <input
             id="search"
             type="search"
@@ -127,25 +134,30 @@ export default function Catalog() {
             onChange={(e) => setSearchInput(e.target.value)}
           />
           {searchInput && (
-            <button className="search-clear" onClick={() => setSearchInput('')} aria-label="Clear search">×</button>
+            <button className="search-clear" onClick={() => setSearchInput('')} aria-label="Clear search">
+              ×
+            </button>
           )}
         </div>
 
         <div className="toolbar-right">
-          <label htmlFor="sort-select" className="sr-only">Sort by</label>
-          <select
-            id="sort-select"
-            value={sort}
-            onChange={(e) => updateParams('sort', e.target.value)}
-          >
+          <label htmlFor="sort-select" className="sr-only">
+            Sort by
+          </label>
+          <select id="sort-select" value={sort} onChange={(e) => updateParams('sort', e.target.value)}>
             {ALL_SORTS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
             ))}
           </select>
 
           <button className="filter-toggle" onClick={() => setShowFilters(!showFilters)}>
-            Filters {(selectedTiers.length + selectedYears.length + selectedStorage.length) > 0 && (
-              <span className="filter-badge">{selectedTiers.length + selectedYears.length + selectedStorage.length}</span>
+            Filters{' '}
+            {selectedTiers.length + selectedYears.length + selectedStorage.length > 0 && (
+              <span className="filter-badge">
+                {selectedTiers.length + selectedYears.length + selectedStorage.length}
+              </span>
             )}
           </button>
         </div>
@@ -157,11 +169,7 @@ export default function Catalog() {
             <h3>Tier</h3>
             {ALL_TIERS.map((tier) => (
               <label key={tier} className="filter-option">
-                <input
-                  type="checkbox"
-                  checked={selectedTiers.includes(tier)}
-                  onChange={() => toggleTier(tier)}
-                />
+                <input type="checkbox" checked={selectedTiers.includes(tier)} onChange={() => toggleTier(tier)} />
                 {tier}
               </label>
             ))}
@@ -171,11 +179,7 @@ export default function Catalog() {
             <h3>Year</h3>
             {[2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map((year) => (
               <label key={year} className="filter-option">
-                <input
-                  type="checkbox"
-                  checked={selectedYears.includes(year)}
-                  onChange={() => toggleYear(year)}
-                />
+                <input type="checkbox" checked={selectedYears.includes(year)} onChange={() => toggleYear(year)} />
                 {year}
               </label>
             ))}
@@ -184,13 +188,15 @@ export default function Catalog() {
           {(selectedTiers.length > 0 || selectedYears.length > 0 || selectedStorage.length > 0) && (
             <button
               className="btn btn-text clear-filters"
-              onClick={() => setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                next.delete('tier');
-                next.delete('year');
-                next.delete('storage');
-                return next;
-              })}
+              onClick={() =>
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.delete('tier');
+                  next.delete('year');
+                  next.delete('storage');
+                  return next;
+                })
+              }
             >
               Clear all filters
             </button>
@@ -202,10 +208,13 @@ export default function Catalog() {
             <div className={cls.emptyState}>
               <h3>No models match these filters</h3>
               <p>Try adjusting your search or filters.</p>
-              <button className="btn btn-primary" onClick={() => {
-                setSearchInput('');
-                setSearchParams({});
-              }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setSearchInput('');
+                  setSearchParams({});
+                }}
+              >
                 Clear all filters
               </button>
             </div>
@@ -220,7 +229,9 @@ export default function Catalog() {
                           src={model.heroImage}
                           alt={model.displayName}
                           loading="lazy"
-                          onError={(e) => { e.target.style.display = 'none'; }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
                         />
                         <div className="card-image-fallback">{model.displayName}</div>
                       </div>
@@ -237,8 +248,15 @@ export default function Catalog() {
                       <div className="card-actions">
                         <button
                           className={`btn-icon favorite ${favorites.includes(model.id) ? 'active' : ''}`}
-                          onClick={(e) => { e.preventDefault(); toggleFavorite(model.id); }}
-                          aria-label={favorites.includes(model.id) ? `Remove ${model.displayName} from favorites` : `Add ${model.displayName} to favorites`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleFavorite(model.id);
+                          }}
+                          aria-label={
+                            favorites.includes(model.id)
+                              ? `Remove ${model.displayName} from favorites`
+                              : `Add ${model.displayName} to favorites`
+                          }
                           aria-pressed={favorites.includes(model.id)}
                         >
                           {favorites.includes(model.id) ? '♥' : '♡'}
@@ -253,7 +271,11 @@ export default function Catalog() {
                               addToCompare(model.id);
                             }
                           }}
-                          aria-label={compare.includes(model.id) ? `Remove ${model.displayName} from compare` : `Add ${model.displayName} to compare`}
+                          aria-label={
+                            compare.includes(model.id)
+                              ? `Remove ${model.displayName} from compare`
+                              : `Add ${model.displayName} to compare`
+                          }
                           aria-pressed={compare.includes(model.id)}
                         >
                           ⇄

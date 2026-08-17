@@ -51,15 +51,11 @@ export function registerHandler(handler) {
 }
 
 export function getOverlayHandlers() {
-  return registry
-    .filter((h) => h.type === 'overlay')
-    .sort((a, b) => a.priority - b.priority);
+  return registry.filter((h) => h.type === 'overlay').sort((a, b) => a.priority - b.priority);
 }
 
 export function getNavigationHandlers() {
-  return registry
-    .filter((h) => h.type === 'navigation')
-    .sort((a, b) => a.priority - b.priority);
+  return registry.filter((h) => h.type === 'navigation').sort((a, b) => a.priority - b.priority);
 }
 
 export function getHandlers() {

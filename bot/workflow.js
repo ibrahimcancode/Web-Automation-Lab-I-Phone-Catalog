@@ -12,6 +12,7 @@ import { getSelectorChain, waitForSelectorChain } from './selectors.js';
 import { getOverlayHandlers, getNavigationHandlers, ensureHandlersLoaded } from './handlers/index.js';
 import { buildSummary, writeResults, writeRunSummary, writeTrace } from './reporting.js';
 import { maxRetries, nextRetryDelayMs } from './backoff.js';
+import { startTrace, stopTrace } from './browser.js';
 import {
   writeCheckpoint,
   observeItem,
@@ -31,8 +32,7 @@ const FIRST_ACTION_OBSTACLE_WAIT_MS = 8000;
 const SHORT_OBSTACLE_WAIT_MS = 1500;
 
 // Selector matching ANY overlay dialog, used to wait for a scheduled overlay.
-const ANY_OVERLAY =
-  '#cookie-banner, #newsletter-popup, #simulated-captcha-overlay';
+const ANY_OVERLAY = '#cookie-banner, #newsletter-popup, #simulated-captcha-overlay';
 
 function sleepMs(ms) {
   if (ms <= 0) return Promise.resolve();
@@ -77,14 +77,20 @@ async function sweepPass(ctx, reporter) {
     let detected = false;
     try {
       detected = await handler.detect(handlerCtx);
-    } catch (err) {
-      reporter.event({ scenario: handler.name, action: 'detect_error', outcome: 'error', detail: String(err) });
+    } catch (_err) {
+      reporter.event({ scenario: handler.name, action: 'detect_error', outcome: 'error', detail: String(_err) });
       continue;
     }
     if (!detected) continue;
 
     acted = true;
-    reporter.event({ scenario: handler.name, action: 'detected', outcome: 'detected', step: ctx.step, item_id: ctx.itemId });
+    reporter.event({
+      scenario: handler.name,
+      action: 'detected',
+      outcome: 'detected',
+      step: ctx.step,
+      item_id: ctx.itemId,
+    });
     await reporter.screenshot(ctx.page, `${handler.name}-detected`);
     console.log(`[bot] detected: ${handler.name} (step ${ctx.step})`);
 
@@ -102,7 +108,9 @@ async function sweepPass(ctx, reporter) {
       step: ctx.step,
       item_id: ctx.itemId,
     });
-    console.log(`[bot] recovered: ${handler.name} -> ${rec.outcome ?? 'resolved'} ${rec.detail ? `(${rec.detail})` : ''}`);
+    console.log(
+      `[bot] recovered: ${handler.name} -> ${rec.outcome ?? 'resolved'} ${rec.detail ? `(${rec.detail})` : ''}`,
+    );
     await demoPause();
   }
   return acted;
@@ -156,7 +164,7 @@ async function clickThroughObstacles(ctx, reporter, selector, { attempts = 4, ti
     try {
       await ctx.page.click(selector, { timeout: timeoutMs });
       return;
-    } catch (err) {
+    } catch (_err) {
       await quickSweep(ctx, reporter);
     }
   }
@@ -172,11 +180,12 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
   const navHandlers = getNavigationHandlers();
   const cap = navHandlers.length > 0 ? maxRetries() : 0;
   let attempt = 0;
-  // The last navigation handler that requested a retry. Persists across
-  // attempts so that when a retried navigation finally succeeds the recovery
-  // is recorded as `resolved` (the disruption was detected AND recovered), not
-  // just counted as a retry.
-  let retriedHandler = null;
+  // Navigation handlers that requested a retry. Persists across attempts so
+  // that when a retried navigation finally succeeds the recovery is recorded
+  // as `resolved` (the disruption was detected AND recovered), not just
+  // counted as a retry. Uses a Map keyed by handler name so duplicates from
+  // the same handler are deduplicated while preserving handler references.
+  const retriedHandlers = new Map();
 
   while (true) {
     attempt += 1;
@@ -235,7 +244,7 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
 
       if (decision.retry) {
         retryWaitMs = decision.waitMs ?? nextRetryDelayMs(attempt);
-        retriedHandler = handler;
+        retriedHandlers.set(handler.name, handler);
         reporter.event({
           scenario: handler.name,
           action: 'retry',
@@ -272,19 +281,19 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
     // already surfaced; otherwise surface the raw error/navigation result.
     if (!claimed && error) throw error;
 
-    // A previously retried navigation now succeeded — record the recovery so
-    // the summary counts the disruption as detected AND resolved.
-    if (retriedHandler) {
+    // Previously retried navigation(s) now succeeded — record recovery for each
+    // so the summary counts every disruption as detected AND resolved.
+    for (const [, handler] of retriedHandlers) {
       reporter.event({
-        scenario: retriedHandler.name,
+        scenario: handler.name,
         action: 'recovered',
         outcome: 'resolved',
         detail: `navigation succeeded after ${attempt} attempt(s)`,
         step: ctx?.step,
         url,
       });
-      retriedHandler = null;
     }
+    retriedHandlers.clear();
     reporter.event({
       scenario: 'workflow',
       action: 'navigated',
@@ -345,9 +354,7 @@ async function extractDetail(page, id, reporter) {
     text('detail.year'),
     text('detail.priceValue'),
     text('detail.colorLabel'),
-    page.$$eval(getSelectorChain('detail.storageOptions').join(','), (els) =>
-      els.map((e) => e.textContent.trim()),
-    ),
+    page.$$eval(getSelectorChain('detail.storageOptions').join(','), (els) => els.map((e) => e.textContent.trim())),
   ]);
   const storageGBs = storageTexts
     .map((t) => t.replace(/[^0-9]/g, ''))
@@ -366,11 +373,18 @@ async function extractDetail(page, id, reporter) {
 
 // Visit one item's detail page and extract its data, recovering from any
 // overlay that appears mid-workflow via a bounded re-sweep + retry.
-async function processItem({ page, baseUrl, href, catalogName, reporter, index }) {
+async function processItem({ page, href, catalogName, reporter, index }) {
   const id = href.split('/model/')[1]?.replace(/\/.*$/, '') ?? href;
   const ctx = { page, step: `detail-${index}`, itemId: id };
 
-  reporter.event({ scenario: 'workflow', action: 'visit_detail', outcome: 'started', item_id: id, url: href, step: ctx.step });
+  reporter.event({
+    scenario: 'workflow',
+    action: 'visit_detail',
+    outcome: 'started',
+    item_id: id,
+    url: href,
+    step: ctx.step,
+  });
   console.log(`[bot] visiting detail: ${id}`);
 
   let lastError = null;
@@ -407,7 +421,14 @@ async function processItem({ page, baseUrl, href, catalogName, reporter, index }
     }
   }
 
-  reporter.event({ scenario: 'workflow', action: 'extract_failed', outcome: 'failed', item_id: id, detail: String(lastError), step: ctx.step });
+  reporter.event({
+    scenario: 'workflow',
+    action: 'extract_failed',
+    outcome: 'failed',
+    item_id: id,
+    detail: String(lastError),
+    step: ctx.step,
+  });
   await reporter.screenshot(page, `extract-failed-${id}`);
   return {
     id,
@@ -471,6 +492,10 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt, 
   await ensureHandlersLoaded();
   const { page, baseUrl } = session;
 
+  // Start Playwright trace if runDir is available
+  const tracePath = runDir ? `${runDir}/trace.zip` : null;
+  await startTrace(session, tracePath);
+
   // Track completed items for resume support
   const completedIds = getCompletedIds(checkpoint);
   const isResumed = completedIds.size > 0;
@@ -524,9 +549,7 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt, 
   // Step 4 — collect card links + names.
   const cardLinkSelector = getSelectorChain('catalog.cardLink').join(',');
   const cardNameSelector = getSelectorChain('catalog.cardName').join(',');
-  const cards = await page.$$eval(cardLinkSelector, (els) =>
-    els.map((a) => ({ href: a.getAttribute('href') })),
-  );
+  const cards = await page.$$eval(cardLinkSelector, (els) => els.map((a) => ({ href: a.getAttribute('href') })));
   const names = await page.$$eval(cardNameSelector, (els) => els.map((e) => e.textContent.trim()));
   const cardMap = new Map();
   cards.forEach((c, i) => {
@@ -595,6 +618,9 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt, 
   await writeResults(reporter.runDir, results);
   await writeRunSummary(reporter.runDir, summary);
   await writeTrace(reporter.runDir, reporter.events);
+
+  // Stop Playwright trace and save to run directory
+  await stopTrace(session, tracePath);
 
   // Finalize checkpoint
   if (checkpoint && runDir) {

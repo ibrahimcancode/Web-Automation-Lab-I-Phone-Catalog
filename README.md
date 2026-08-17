@@ -18,7 +18,7 @@ as the Resilient Web Automation Lab internship.
 ## Repository layout
 
 ```
-MASTER_SPEC (1).md     # Master plan + acceptance criteria per week
+docs/MASTER_SPEC.md     # Master plan + acceptance criteria per week
 CHAOS_ENGINE_SPEC.md   # Chaos Engine design contract
 docs/
   SCENARIOS.md         # Scenario coverage matrix (only handled scenarios, kept accurate)
@@ -38,7 +38,7 @@ runs/                  # run evidence (gitignored; sample runs committed)
 ```
 
 The bot never touches the sandbox's internals — it only drives the rendered browser (decoupling rule
-in `MASTER_SPEC (1).md` §1.3).
+in `docs/MASTER_SPEC.md` §1.3).
 
 ## Setup
 
@@ -164,7 +164,7 @@ failure must never replace the real root-cause error).
 ## Known limitations
 
 - **Local sandbox only** — the bot targets the intern's own `localhost` sandbox and must never be
-  pointed at real third-party sites (ethics rule, `MASTER_SPEC (1).md` §7.5).
+  pointed at real third-party sites (ethics rule, `docs/MASTER_SPEC.md` §7.5).
 - **Dataset size** — the catalog ships 43 models, slightly above the brief's suggested 20–40 range.
 - **Progress does not survive process restart** — the bot has no persistence layer; a new run always
   starts from the beginning, and the sandbox's "once per session" overlays reset with the browser
@@ -175,7 +175,7 @@ failure must never replace the real root-cause error).
 
 ## Documentation
 
-- Master plan + acceptance criteria: `MASTER_SPEC (1).md`
+- Master plan + acceptance criteria: `docs/MASTER_SPEC.md`
 - Chaos Engine contract: `CHAOS_ENGINE_SPEC.md`
 - Scenario coverage matrix: `docs/SCENARIOS.md`
 - AI usage log: `docs/AI_LOG.md`

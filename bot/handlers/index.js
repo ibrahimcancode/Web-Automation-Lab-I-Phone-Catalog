@@ -35,6 +35,8 @@ export async function ensureHandlersLoaded() {
   await import('./redirect_handler.js');
   await import('./dom_drift_handler.js');
   await import('./blocked_clicks_handler.js');
+  await import('./rate_limit_handler.js');
+  await import('./session_expiry_handler.js');
   handlersLoaded = true;
 }
 

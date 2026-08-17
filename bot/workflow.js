@@ -10,8 +10,17 @@
 
 import { getSelectorChain, waitForSelectorChain } from './selectors.js';
 import { getOverlayHandlers, getNavigationHandlers, ensureHandlersLoaded } from './handlers/index.js';
-import { buildSummary, writeResults, writeRunSummary } from './reporting.js';
+import { buildSummary, writeResults, writeRunSummary, writeTrace } from './reporting.js';
 import { maxRetries, nextRetryDelayMs } from './backoff.js';
+import {
+  writeCheckpoint,
+  observeItem,
+  completeItem,
+  failItem,
+  setPhase,
+  finalizeCheckpoint,
+  getCompletedIds,
+} from './checkpoint.js';
 
 const MAX_SWEEP_PASSES = 5;
 // Bounded wait (first page of a run) for a scheduled overlay such as the
@@ -63,10 +72,11 @@ async function waitForPossibleOverlay(page, timeoutMs) {
 // handler detected and recovered a disruption.
 async function sweepPass(ctx, reporter) {
   let acted = false;
+  const handlerCtx = { ...ctx, reporter };
   for (const handler of getOverlayHandlers()) {
     let detected = false;
     try {
-      detected = await handler.detect(ctx);
+      detected = await handler.detect(handlerCtx);
     } catch (err) {
       reporter.event({ scenario: handler.name, action: 'detect_error', outcome: 'error', detail: String(err) });
       continue;
@@ -80,7 +90,7 @@ async function sweepPass(ctx, reporter) {
 
     let rec = {};
     try {
-      rec = (await handler.recover(ctx)) ?? {};
+      rec = (await handler.recover(handlerCtx)) ?? {};
     } catch (err) {
       rec = { outcome: 'error', detail: String(err) };
     }
@@ -184,6 +194,13 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
 
     if (navHandlers.length === 0) {
       if (error) throw error;
+      reporter.event({
+        scenario: 'workflow',
+        action: 'navigated',
+        outcome: 'ok',
+        duration_ms: navigationMs,
+        url,
+      });
       return response;
     }
 
@@ -200,7 +217,7 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
 
       let decision;
       try {
-        decision = await handler.recover({ page, response, error, attempt, url, navigationMs });
+        decision = await handler.recover({ page, response, error, attempt, url, navigationMs, reporter });
       } catch (err) {
         decision = { outcome: 'error', detail: String(err) };
       }
@@ -268,6 +285,13 @@ export async function navigateWithGuard(page, url, ctx, reporter) {
       });
       retriedHandler = null;
     }
+    reporter.event({
+      scenario: 'workflow',
+      action: 'navigated',
+      outcome: 'ok',
+      duration_ms: navigationMs,
+      url,
+    });
     return response;
   }
 }
@@ -443,12 +467,20 @@ async function clickLoadMoreAndVerify({ page, ctx, reporter, loadMoreSelector, c
 }
 
 // Full workflow orchestration. Returns { results, summary }.
-export async function runWorkflow({ session, reporter, limit = null, startedAt }) {
+export async function runWorkflow({ session, reporter, limit = null, startedAt, checkpoint = null, runDir = null }) {
   await ensureHandlersLoaded();
   const { page, baseUrl } = session;
 
+  // Track completed items for resume support
+  const completedIds = getCompletedIds(checkpoint);
+  const isResumed = completedIds.size > 0;
+
   // Step 1 — home page (first action: spend a bounded window for a delayed popup).
   const homeCtx = { page, step: 'home' };
+  if (checkpoint && runDir) {
+    checkpoint = setPhase(checkpoint, 'home', 'navigating_home');
+    await writeCheckpoint(runDir, checkpoint);
+  }
   await navigateWithGuard(page, `${baseUrl}/`, homeCtx, reporter);
   await waitForPageReady(page, 'home.page', reporter);
   await clearObstacles(homeCtx, reporter, { waitMs: FIRST_ACTION_OBSTACLE_WAIT_MS });
@@ -458,6 +490,10 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
 
   // Step 2 — catalog page.
   const catalogCtx = { page, step: 'catalog' };
+  if (checkpoint && runDir) {
+    checkpoint = setPhase(checkpoint, 'catalog', 'navigating_catalog');
+    await writeCheckpoint(runDir, checkpoint);
+  }
   await navigateWithGuard(page, `${baseUrl}/catalog`, catalogCtx, reporter);
   await waitForPageReady(page, 'catalog.page', reporter);
   await clearObstacles(catalogCtx, reporter);
@@ -470,13 +506,6 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
   const loadMoreSelector = getSelectorChain('catalog.loadMore').join(',');
   let prevCount = await page.$$eval(cardSelector, (els) => els.length);
   while (await isVisible(page, loadMoreSelector)) {
-    // A delayed overlay (e.g. the newsletter popup, which arms ~3s after the
-    // cookie banner is dismissed) can land mid-flow and intercept the click —
-    // click through any such overlay, bounded. Never a fixed sleep.
-    //
-    // Scenario 8: the click must actually take effect before we move on — the
-    // helper waits (bounded) for the card count to grow and re-sweeps + retries
-    // when a transparent blocker swallowed the click.
     const grew = await clickLoadMoreAndVerify({
       page,
       ctx: catalogCtx,
@@ -505,14 +534,44 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
     if (!cardMap.has(href)) cardMap.set(href, names[i] ?? null);
   });
   const links = [...cardMap.keys()];
-  const limitedLinks = limit ? links.slice(0, limit) : links;
+
+  // Observe all items for checkpoint
+  if (checkpoint && runDir) {
+    for (const href of links) {
+      const id = href.split('/model/')[1]?.replace(/\/.*$/, '') ?? href;
+      checkpoint = observeItem(checkpoint, id, href);
+    }
+    checkpoint = setPhase(checkpoint, 'extracting', 'catalog_loaded');
+    await writeCheckpoint(runDir, checkpoint);
+  }
+
+  // Filter out already-completed items when resuming
+  const itemsToProcess = links.filter((href) => {
+    const id = href.split('/model/')[1]?.replace(/\/.*$/, '') ?? href;
+    return !completedIds.has(id);
+  });
+  const limitedLinks = limit ? itemsToProcess.slice(0, limit) : itemsToProcess;
+
+  if (isResumed) {
+    console.log(`[bot] resume: ${completedIds.size} already done, ${limitedLinks.length} remaining`);
+  }
 
   // Step 5 — visit each detail page.
-  const results = [];
+  const results = [...(checkpoint?.results ?? [])];
   for (let i = 0; i < limitedLinks.length; i += 1) {
     const href = limitedLinks[i];
     const item = await processItem({ page, baseUrl, href, catalogName: cardMap.get(href), reporter, index: i + 1 });
     results.push(item);
+
+    // Update checkpoint after each completed item
+    if (checkpoint && runDir) {
+      if (item.status === 'ok') {
+        checkpoint = completeItem(checkpoint, item.id, item);
+      } else {
+        checkpoint = failItem(checkpoint, item.id, item.error ?? 'unknown', 1);
+      }
+      await writeCheckpoint(runDir, checkpoint);
+    }
   }
 
   // Step 6 — summary.
@@ -528,11 +587,20 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt }
       endedAt,
       durationMs: endedAt.getTime() - startedAt.getTime(),
       screenshots: reporter.screenshotCount,
+      resumed: isResumed,
+      resumed_from: checkpoint?.resumed_from ?? null,
     },
   });
 
   await writeResults(reporter.runDir, results);
   await writeRunSummary(reporter.runDir, summary);
+  await writeTrace(reporter.runDir, reporter.events);
+
+  // Finalize checkpoint
+  if (checkpoint && runDir) {
+    checkpoint = finalizeCheckpoint(checkpoint);
+    await writeCheckpoint(runDir, checkpoint);
+  }
 
   return { results, summary };
 }

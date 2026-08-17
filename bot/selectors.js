@@ -118,11 +118,9 @@ export const selectors = {
     },
     captcha: {
       overlay: '#simulated-captcha-overlay',
-      checkbox: '#simulated-captcha-overlay .chaos-captcha-checkbox-btn',
-      question: '#simulated-captcha-overlay .chaos-captcha-question',
-      input: '#simulated-captcha-overlay .chaos-captcha-input',
-      submit: '#simulated-captcha-overlay .chaos-captcha-submit',
-      error: '#simulated-captcha-overlay .chaos-captcha-error',
+      grid: '.chaos-captcha-grid',
+      tile: '.chaos-captcha-tile',
+      submit: '.chaos-captcha-submit',
     },
   },
 };

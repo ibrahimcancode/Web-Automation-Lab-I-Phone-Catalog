@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@bot/*": ["bot/*"],
+      "@tests/*": ["tests/*"],
+      "@scripts/*": ["scripts/*"]
+    }
+  },
+  "include": [
+    "bot/**/*.js",
+    "tests/**/*.js",
+    "scripts/**/*.js",
+    "playwright.config.js",
+    "eslint.config.js"
+  ],
+  "exclude": [
+    "node_modules/",
+    "dist/",
+    "runs/",
+    "test-results/",
+    "iphone-catalog/"
+  ]
+}

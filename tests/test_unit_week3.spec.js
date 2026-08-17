@@ -16,6 +16,8 @@ import {
 import slowResponseHandler from '../bot/handlers/slow_response_handler.js';
 import domDriftHandler from '../bot/handlers/dom_drift_handler.js';
 import blockedClicksHandler from '../bot/handlers/blocked_clicks_handler.js';
+import rateLimitHandler from '../bot/handlers/rate_limit_handler.js';
+import sessionExpiryHandler from '../bot/handlers/session_expiry_handler.js';
 import { getSelector, getSelectorChain } from '../bot/selectors.js';
 import { buildSummary } from '../bot/reporting.js';
 
@@ -53,7 +55,7 @@ test.describe('slow_responses handler', () => {
   test('is registered as a navigation handler', async () => {
     await ensureHandlersLoaded();
     expect(getHandlers().map((h) => h.name)).toContain('slow_responses');
-    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors', 'slow_responses', 'unexpected_redirect']);
+    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['rate_limiting', 'session_expiry', 'server_errors', 'slow_responses', 'unexpected_redirect']);
   });
 
   test('detect claims a slow-but-loaded response', () => {
@@ -206,5 +208,85 @@ test.describe('blocked_clicks handler (Scenario 8)', () => {
       runMeta: { run_id: 'test-run' },
     });
     expect(summary.disruptions.blocked_clicks).toEqual({ detected: 1, resolved: 1, retries: 0 });
+  });
+});
+
+test.describe('rate_limiting handler (Scenario 9)', () => {
+  test('is registered as a navigation handler', async () => {
+    await ensureHandlersLoaded();
+    expect(getHandlers().map((h) => h.name)).toContain('rate_limiting');
+    expect(getNavigationHandlers().map((h) => h.name)).toContain('rate_limiting');
+  });
+
+  test('detect claims a 429 response', async () => {
+    expect(await rateLimitHandler.detect({ response: { status: 429 } })).toBe(true);
+  });
+
+  test('detect ignores non-429 responses', async () => {
+    expect(await rateLimitHandler.detect({ response: { status: 200 } })).toBe(false);
+    expect(await rateLimitHandler.detect({ response: { status: 503 } })).toBe(false);
+    expect(await rateLimitHandler.detect({ response: null })).toBe(false);
+  });
+
+  test('recover returns resolved after backing off', async () => {
+    const page = { reload: async () => {} };
+    const response = { status: 429, headers: { 'retry-after': '1' } };
+    const reporter = { event: async () => {} };
+    const rec = await rateLimitHandler.recover({ page, response, reporter });
+    expect(rec.outcome).toBe('resolved');
+    expect(rec.detail).toMatch(/backoff/);
+  });
+
+  test('buildSummary counts rate_limiting evidence', () => {
+    const summary = buildSummary({
+      events: [
+        { scenario: 'rate_limiting', action: 'detected', outcome: 'detected' },
+        { scenario: 'rate_limiting', action: 'recovered', outcome: 'resolved', detail: 'retried after 1s backoff' },
+      ],
+      results: [validItem()],
+      runMeta: { run_id: 'test-run' },
+    });
+    expect(summary.disruptions.rate_limiting).toEqual({ detected: 1, resolved: 1, retries: 0 });
+  });
+});
+
+test.describe('session_expiry handler (Scenario 10)', () => {
+  test('is registered as a navigation handler', async () => {
+    await ensureHandlersLoaded();
+    expect(getHandlers().map((h) => h.name)).toContain('session_expiry');
+    expect(getNavigationHandlers().map((h) => h.name)).toContain('session_expiry');
+  });
+
+  test('detect claims when interstitial is visible', async () => {
+    const page = { isVisible: async () => true };
+    expect(await sessionExpiryHandler.detect({ page })).toBe(true);
+  });
+
+  test('detect returns false when interstitial is absent', async () => {
+    const page = { isVisible: async () => false };
+    expect(await sessionExpiryHandler.detect({ page })).toBe(false);
+  });
+
+  test('recover returns resolved after clicking continue', async () => {
+    const navDone = {};
+    const page = {
+      waitForSelector: async () => ({ click: async () => {} }),
+      waitForNavigation: async () => {},
+    };
+    const rec = await sessionExpiryHandler.recover({ page });
+    expect(rec.outcome).toBe('resolved');
+    expect(rec.detail).toMatch(/session restored/);
+  });
+
+  test('buildSummary counts session_expiry evidence', () => {
+    const summary = buildSummary({
+      events: [
+        { scenario: 'session_expiry', action: 'detected', outcome: 'detected' },
+        { scenario: 'session_expiry', action: 'recovered', outcome: 'resolved', detail: 'clicked continue, session restored' },
+      ],
+      results: [validItem()],
+      runMeta: { run_id: 'test-run' },
+    });
+    expect(summary.disruptions.session_expiry).toEqual({ detected: 1, resolved: 1, retries: 0 });
   });
 });

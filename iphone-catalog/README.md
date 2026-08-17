@@ -1,16 +1,38 @@
-# React + Vite
+# iPhone Catalog — Sandbox Site
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Local React/Vite listing site serving as the sandbox for the Resilient Web Automation Lab.
 
-Currently, two official plugins are available:
+## What This Is
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+A deterministic iPhone catalog (43 models) with a configurable **Chaos Engine** that simulates real-world web disruptions: cookie banners, newsletter popups, visual CAPTCHA gates, server errors, slow responses, redirects, DOM drift, blocked clicks, rate limiting, and session expiry.
 
-## React Compiler
+## How It Relates to the Root Project
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This is the sandbox target. The Playwright bot (in the root `bot/` directory) automates this site, detecting and recovering from every simulated disruption.
 
-## Expanding the Oxlint configuration
+**Root README is the primary entry point for the project.**
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Starting
+
+```bash
+# From the project root:
+npm run site          # chaos ON (random_mode, seed 42)
+npm run site:off      # chaos OFF (happy path)
+npm run site:all      # all core scenarios forced deterministically
+```
+
+Or directly:
+
+```bash
+npm run dev           # uses bundled chaos.json
+```
+
+The dev server runs at `http://localhost:5173` by default.
+
+## Chaos Configuration
+
+Override chaos config via the `VITE_CHAOS_JSON` environment variable (set by root `npm run site*` scripts). The config is read once at dev-server startup.
+
+## Documentation
+
+See the root `README.md` and `docs/` directory for full project documentation.

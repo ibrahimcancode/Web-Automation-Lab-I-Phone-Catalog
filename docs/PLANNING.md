@@ -1,6 +1,6 @@
 # Planning Document — Resilient Web Automation Lab
 
-> Concise planning reference. Consolidates the relevant planning content from `MASTER_SPEC (1).md`
+> Concise planning reference. Consolidates the relevant planning content from `docs/MASTER_SPEC.md`
 > (master blueprint + acceptance criteria) and `CHAOS_ENGINE_SPEC.md` (sandbox disruption design).
 > It is a living summary, not a replacement for either spec — see those files for the full detail.
 
@@ -21,22 +21,29 @@ visual polish or feature count (MASTER_SPEC §1).
 ## 2. Architecture
 
 ```
-MASTER_SPEC (1).md   # Master plan + per-week acceptance criteria (source of truth)
-CHAOS_ENGINE_SPEC.md # Chaos Engine design contract (determinism, hook types, validation)
-iphone-catalog/      # Part A: React/Vite sandbox + Chaos Engine (client-side + Vite middleware)
-  src/chaos/         #   engine, seeded randomizer, logger, per-scenario handlers, chaos.json
+docs/MASTER_SPEC.md    # Master plan + per-week acceptance criteria (source of truth)
+CHAOS_ENGINE_SPEC.md   # Chaos Engine design contract (determinism, hook types, validation)
+iphone-catalog/        # Part A: React/Vite sandbox + Chaos Engine (client-side + Vite middleware)
+  src/chaos/           #   engine, seeded randomizer, logger, per-scenario handlers, chaos.json
   vite-chaos-server.js #   server-side Scenario 4 middleware (genuine 5xx responses)
-bot/                 # Part B: Playwright bot
-  run.js             #   entry point (CLI)
-  workflow.js        #   orchestration: happy path, obstacle sweep, navigation guard
-  handlers/          #   one detect → recover module per scenario + registry (index.js)
-  reporting.js       #   JSON-lines events, anomaly screenshots, run summary (buildSummary)
-  selectors.js       #   all selectors centralized (Week 3 extends into fallback chains)
-  backoff.js         #   pure exponential-backoff calculator
-  validate.js        #   pure extracted-data validation
-tests/               # Playwright test tiers (unit / happy-path / scenarios / all-four)
-runs/                # run evidence (gitignored; sample runs committed)
-docs/                # PLANNING.md, SCENARIOS.md, AI_LOG.md
+  vite-chaos-slow.js   #   server-side Scenario 5 middleware (delayed responses)
+  vite-chaos-rate-limit.js    # server-side Scenario 9 middleware (HTTP 429)
+  vite-chaos-session-expiry.js # server-side Scenario 10 middleware (session expired)
+bot/                   # Part B: Playwright bot
+  run.js               #   entry point (CLI with --resume support)
+  workflow.js          #   orchestration: happy path, obstacle sweep, navigation guard
+  handlers/            #   one detect -> recover module per scenario + registry (index.js)
+  reporting.js         #   JSON-lines events, anomaly screenshots, run summary, metrics, trace
+  selectors.js         #   all selectors centralized (with fallback chains)
+  backoff.js           #   pure exponential-backoff calculator
+  timeouts.js          #   navigation duration classification
+  checkpoint.js        #   crash-safe checkpoint persistence
+  validate.js          #   pure extracted-data validation
+tests/                 # Playwright test tiers (unit / happy-path / scenarios / all-four / gauntlet)
+configs/               # Chaos configuration presets (demo, off, etc.)
+scripts/               # Cross-platform orchestration scripts
+runs/                  # run evidence (gitignored; sample runs committed)
+docs/                  # PLANNING.md, SCENARIOS.md, AI_LOG.md, MASTER_SPEC.md, WEEK4_AUDIT.md
 ```
 
 Key structural rules (MASTER_SPEC §1.3, §7):
@@ -63,18 +70,20 @@ Chosen workflow (MASTER_SPEC §4.3, Phase 2.1 — option a): *catalog extraction
 6. Write evidence + run summary (`buildSummary`: PASS/FAIL verdict, per-scenario disruption counts,
    validation stats).
 
-## 4. Eight-Scenario Plan
+## 4. Ten-Scenario Plan
 
 | # | Scenario | Week | Bot handling (detect → recover) |
 |---|---|---|---|
-| 1 | Random pop-up / modal (newsletter signup) | 1 (sandbox) / 2 (bot) | Fill + submit a placeholder email, verify success state, dismiss; bounded retries |
+| 1 | Random pop-up / modal (newsletter signup) | 1 / 2 | Fill + submit a placeholder email, verify success state, dismiss; bounded retries |
 | 2 | Cookie / consent banner | 1 / 2 | Accept (fallback Reject), verify banner hidden |
-| 3 | Simulated captcha gate | 1 / 2 | Click checkbox, parse math question, submit answer; bounded retry |
+| 3 | Simulated captcha gate | 1 / 2 / 4 | Visual 3x3 traffic-light grid; bot screenshots tiles, analyzes pixel colors (R/Y/G channels), selects correct tiles |
 | 4 | Site down / server errors | 2 | Navigation guard: detect 5xx/network error, exponential backoff retry with hard cap, resume from current item |
-| 5 | Slow responses / timeouts | **3 (in progress)** | Navigation guard: classify load duration (pure `bot/timeouts.js`); on "slow but loaded" record the recovery in place — no retry, no repeated navigation |
-| 6 | Unexpected redirection | **3** | Verify URL/page identity post-navigation; route back |
-| 7 | DOM change / selector drift | **3** | Fallback-chain selectors instead of brittle CSS paths |
-| 8 | Blocked / intercepted clicks | **3** | Detect interception, remove obstruction or alternative action, verify effect |
+| 5 | Slow responses / timeouts | 3 | Navigation guard: classify load duration (pure `bot/timeouts.js`); on "slow but loaded" record the recovery in place |
+| 6 | Unexpected redirection | 3 | Verify URL/page identity post-navigation; route back |
+| 7 | DOM change / selector drift | 3 | Fallback-chain selectors instead of brittle CSS paths |
+| 8 | Blocked / intercepted clicks | 3 | Detect interception, remove obstruction or alternative action, verify effect |
+| 9 | HTTP 429 rate limiting | 4 | Navigation guard: detect 429, extract Retry-After header, back off, retry |
+| 10 | Session expiry | 4 | Navigation guard: detect interstitial page, click "Continue" to restore session |
 
 Scenarios 5–8 must NOT be started until Week 3 (MASTER_SPEC §0.1, rule 3).
 
@@ -135,8 +144,8 @@ Rules (CHAOS_ENGINE_SPEC §7, §10):
 ## 8. Ethics
 
 - The bot targets **only the intern's own local sandbox** — never a real third-party site.
-- The captcha handler solves only the sandbox's **simulated** math challenge. It must never be
-  adapted or repurposed toward bypassing genuine anti-bot/CAPTCHA protections on real services
-  (MASTER_SPEC §7.5). Resilient automation and evading others' defenses are distinct skills; only the
-  former is in scope.
+- The captcha handler solves only the sandbox's **simulated** visual traffic-light challenge via pixel
+  analysis. It must never be adapted or repurposed toward bypassing genuine anti-bot/CAPTCHA
+  protections on real services (MASTER_SPEC §7.5). Resilient automation and evading others' defenses
+  are distinct skills; only the former is in scope.
 - Never paste real personal data or credentials into AI tools; never commit secrets.

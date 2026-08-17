@@ -2,7 +2,7 @@
   "enabled": true,
   "random_mode": false,
   "seed": 42,
-  "note": "Deterministic all-eight live demo. random_mode=false forces every enabled scenario (probability is ignored, no RNG draws) so a single run deterministically triggers and recovers all 8 core chaos scenarios at controlled points instead of hoping a seed lines up.",
+  "note": "Deterministic stretch demo. random_mode=false forces every enabled scenario so a single run deterministically triggers and recovers all 10 chaos scenarios at controlled points.",
   "scenarios": {
     "cookie_banner": {
       "enabled": true,
@@ -43,6 +43,17 @@
       "enabled": true,
       "probability": 1.0,
       "rearm_after_dismissal_ms": 1500
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "probability": 1.0,
+      "fail_first_n": 2,
+      "retry_after_seconds": 1
+    },
+    "session_expiry": {
+      "enabled": true,
+      "probability": 1.0,
+      "trigger_after_navigations": 2
     }
   }
 }

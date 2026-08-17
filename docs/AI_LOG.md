@@ -1,7 +1,32 @@
 # AI_LOG.md
 
-> Running log of AI usage across the project, per the brief's §7 requirement. Entries are added as
-> the work happens, not reconstructed at the end. Week 1 entries live in `iphone-catalog/AI_LOG.md`.
+> **Canonical** AI usage log for the project, per the brief's §7 requirement. All entries —
+> Weeks 1–4 — are recorded here. Entries are added as the work happens, not reconstructed at the end.
+
+---
+
+### Entry W1-1 — Week 1: spec drafting and chaos engine design
+- **Trying to do:** Draft the master specification and chaos engine design contract for a local sandbox site.
+- **Tool/prompt:** opencode; given the internship brief and requirements.
+- **What it got right:** Produced a clear 4-week milestone plan, chaos engine spec with determinism contract, and scenario definitions.
+- **What I learned:** Starting with the spec prevented scope creep during implementation.
+
+### Entry W1-2 — Week 1: sandbox site + chaos engine implementation
+- **Trying to do:** Build the React/Vite iPhone catalog with the chaos engine (cookie banner, newsletter popup, simulated captcha, server errors).
+- **Tool/prompt:** opencode; given the chaos engine spec and the React/Vite scaffold.
+- **What it got right:** The chaos engine's `should_trigger()` idempotent pattern and per-navigation decision cache kept scenarios deterministic and debuggable.
+- **What I learned:** Vite middleware is the right place for server-side chaos (server errors, slow responses) since React components can't intercept HTTP responses.
+
+### Entry W1-3 — Week 1: model data switch and image generation
+- **Trying to do:** Populate the catalog with 43 real iPhone models and generate placeholder images.
+- **Tool/prompt:** opencode; helped generate the data model and image placeholders.
+- **What it got right:** Using a JSON data file for models kept the catalog data-driven and easy to extend.
+- **What I learned:** 43 models slightly exceeds the brief's 20-40 range but provides a more realistic dataset for the automation bot.
+
+### Entry W1-4 — Week 1: home page images and final polish
+- **Trying to do:** Finalize the home page layout with model images and links.
+- **Tool/prompt:** opencode; given the existing React components and routing.
+- **What it got right:** The React Router setup with nested routes (`/model/:slug`) gave the bot a realistic multi-page navigation challenge.
 
 ---
 
@@ -211,5 +236,28 @@
   `verdict=PASS`, `items_failed=0`, `invalid=0`, no duplicates.
 
 ---
+
+### Entry W4-1 — Week 4: Visual traffic-light CAPTCHA (M8)
+- **Trying to do:** Replace the arithmetic CAPTCHA (`What is 7 + 3?`) with a visual 3x3 traffic-light grid that the bot solves via pixel analysis.
+- **Tool/prompt:** opencode; given the existing SimulatedCaptcha.jsx and captcha_handler.js.
+- **What it got right:** The sandbox renders SVG traffic lights + distractor scenes in a 3x3 grid; the bot screenshots each tile, analyzes RGB channels (red R>180/G<100/B<100, yellow R>180/G>140/B<80, green R<100/G>130/B<100), and selects tiles with confidence > 0.5. Zero answer leakage via DOM attributes.
+- **What I had to change:** (a) The old `parseMathQuestion` export was still imported by unit tests — re-exported as a legacy utility to avoid weakening tests. (b) Selector map tests referenced old `checkbox`/`question`/`input`/`error` keys — updated to `grid`/`tile`. (c) The handler ctx didn't pass `reporter` — fixed in `sweepPass()`.
+
+### Entry W4-2 — Week 4: Stretch scenarios — rate limiting + session expiry (M9)
+- **Trying to do:** Add HTTP 429 rate limiting and session expiry as the 9th and 10th chaos scenarios.
+- **Tool/prompt:** opencode; given the existing Vite middleware pattern and handler registry.
+- **What it got right:** Both follow the established patterns exactly: Vite server middleware for sandbox simulation, navigation-type bot handlers registered via `registerHandler()`. The chaos demo config now includes all 10 scenarios.
+- **What I had to change:** (a) Initial `rate_limit_handler.js` imported `retry` from `backoff.js` which doesn't exist — rewrote to use inline `setTimeout` + `page.reload()`. (b) `buildSummary()` had a hardcoded `scenarioNames` array — added the two new names. (c) Navigation guard didn't pass `reporter` to handler ctx — fixed. (d) Handler priorities needed ordering: rate_limiting(85) < session_expiry(90) < server_errors(100).
+
+### Entry W4-3 — Week 4: Observability — computeMetrics + writeTrace (M10)
+- **Trying to do:** Add structured metrics and human-readable trace log to the run summary.
+- **Tool/prompt:** opencode; given the existing reporting.js and workflow.js.
+- **What it got right:** `computeMetrics(events)` is a pure function deriving navigation timing, item extraction timing, per-scenario recovery timing, phase timing, and disruption counts from the event log. `writeTrace()` produces a column-aligned trace log alongside the JSONL. Both are attached to `summary.metrics` in `buildSummary()`.
+- **What I had to change:** Added `navigated` events to `navigateWithGuard()` (both no-handler and post-recovery paths) so `computeMetrics` has timing data.
+
+### Entry W4-4 — Week 4: Final test run — 61 unit tests passing
+- **Trying to do:** Verify all unit tests pass after Week 4 changes.
+- **Result:** 61/61 unit tests pass in ~2.6s. 11 new tests for stretch scenarios. Updated handler registry, navigation handler ordering, and selector map tests.
+- **What I learned:** Each new scenario handler requires coordinated updates across: handler module, handler registry, selector map, unit tests, chaos config, Vite middleware, and documentation.
 
 *(Add 2–3 entries per week going forward, per the brief's cadence.)*

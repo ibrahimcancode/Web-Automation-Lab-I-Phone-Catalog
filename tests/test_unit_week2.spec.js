@@ -72,11 +72,11 @@ test.describe('captcha question parser', () => {
 });
 
 test.describe('handler registry', () => {
-  test('loads all five Week 3 handlers exactly once', async () => {
+  test('loads all handlers exactly once (8 core + 2 stretch)', async () => {
     await ensureHandlersLoaded();
     await ensureHandlersLoaded(); // idempotent — must not double-register
     const names = getHandlers().map((h) => h.name).sort();
-    expect(names).toEqual(['blocked_clicks', 'cookie_banner', 'dom_drift', 'newsletter_popup', 'server_errors', 'simulated_captcha', 'slow_responses', 'unexpected_redirect']);
+    expect(names).toEqual(['blocked_clicks', 'cookie_banner', 'dom_drift', 'newsletter_popup', 'rate_limiting', 'server_errors', 'session_expiry', 'simulated_captcha', 'slow_responses', 'unexpected_redirect']);
   });
 
   test('overlay handlers are ordered by priority', async () => {
@@ -90,9 +90,9 @@ test.describe('handler registry', () => {
     ]);
   });
 
-  test('navigation handlers are server_errors and slow_responses', async () => {
+  test('navigation handlers are server_errors, slow_responses, unexpected_redirect, rate_limiting, and session_expiry', async () => {
     await ensureHandlersLoaded();
-    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['server_errors', 'slow_responses', 'unexpected_redirect']);
+    expect(getNavigationHandlers().map((h) => h.name)).toEqual(['rate_limiting', 'session_expiry', 'server_errors', 'slow_responses', 'unexpected_redirect']);
   });
 
   test('every handler exposes the contract', async () => {
@@ -140,11 +140,9 @@ test.describe('selector map', () => {
     'chaos.popup.close',
     'chaos.popup.success',
     'chaos.captcha.overlay',
-    'chaos.captcha.checkbox',
-    'chaos.captcha.question',
-    'chaos.captcha.input',
+    'chaos.captcha.grid',
+    'chaos.captcha.tile',
     'chaos.captcha.submit',
-    'chaos.captcha.error',
   ];
 
   test('all selectors referenced by the bot resolve', () => {

@@ -1,12 +1,12 @@
 // Deterministic automated test for demo mode.
 //
 // `npm run demo:all` uses a dedicated chaos config (configs/chaos.demo.json)
-// with random_mode=false, so all EIGHT core scenarios are FORCED to fire during
+// with random_mode=false, so all TEN scenarios are FORCED to fire during
 // a single run at their controlled points — no probability, no seed luck. This
 // test proves:
 //   1. The demo config is deterministic and complete (static).
 //   2. The catalog really ships DEMO_CATALOG_SIZE models (static).
-//   3. A real workflow run against that config detects AND resolves all eight
+//   3. A real workflow run against that config detects AND resolves all ten
 //      scenarios with valid, duplicate-free data (end-to-end, headless).
 // The demo script itself (scripts/demo-all.js) additionally asserts the full
 // 43/43 extraction in the live run; this tier keeps a bounded limit to stay fast.
@@ -32,7 +32,7 @@ test.describe('Demo config (static)', () => {
     expect(typeof cfg.seed).toBe('number');
   });
 
-  test('forces every one of the eight core scenarios on', () => {
+  test('forces every one of the ten scenarios on', () => {
     const cfg = loadDemoConfig();
     for (const name of DEMO_SCENARIOS) {
       expect(cfg.scenarios[name], `${name} should be enabled`).toBeDefined();
@@ -40,7 +40,7 @@ test.describe('Demo config (static)', () => {
     }
   });
 
-  test('passes validateDemoConfig (all eight present + enabled)', () => {
+  test('passes validateDemoConfig (all ten present + enabled)', () => {
     expect(validateDemoConfig(loadDemoConfig())).toEqual([]);
   });
 
@@ -58,7 +58,7 @@ test.describe('Demo mode end-to-end (headless, deterministic)', () => {
   });
   test.afterAll(async () => site?.close());
 
-  test('recovers all eight scenarios in one run with valid, duplicate-free data', async () => {
+  test('recovers all ten scenarios in one run with valid, duplicate-free data', async () => {
     const { summary, reporter } = await runBotOnce({ baseUrl: site.baseUrl, limit: 3 });
 
     expect(summary.verdict).toBe('PASS');

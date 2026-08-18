@@ -1,9 +1,9 @@
-// Deterministic all-eight live demonstration mode.
+// Deterministic all-ten live demonstration mode.
 //
 // `npm run demo:all` runs this script. In one run it:
 //
 //   1. Boots the sandbox with the dedicated demo chaos config
-//      (configs/chaos.demo.json) — all 8 core scenarios forced with
+//      (configs/chaos.demo.json) — all ten scenarios forced with
 //      random_mode=false, so every scenario is GUARANTEED to fire at its
 //      controlled point. No probability, no seed luck.
 //   2. Opens a VISIBLE headed Chromium (the point of a live demo).
@@ -65,7 +65,7 @@ function parseArgs(argv) {
 function printHelp() {
   console.log(`Usage: node scripts/demo-all.js [options]
 
-Deterministic all-eight live demo. Boots the sandbox with the demo chaos
+Deterministic all-ten live demo. Boots the sandbox with the demo chaos
 config, opens a visible browser, runs the full 43-model workflow, recovers
 from every scenario, saves evidence, and verifies PASS.
 
@@ -199,7 +199,7 @@ export async function main(argv = process.argv) {
     console.log('│  Verification report                                                    │');
     console.log('└─────────────────────────────────────────────────────────────────────────┘');
     if (ok) {
-      console.log('  PASS — all 8 scenarios detected and recovered, 43/43 models extracted,');
+      console.log('  PASS — all ten scenarios detected and recovered, 43/43 models extracted,');
       console.log('  zero failures, zero invalid, zero duplicates.');
       console.log(`  Evidence: ${runDir} (results.json, summary.json, events.jsonl, screenshots/)`);
     } else {

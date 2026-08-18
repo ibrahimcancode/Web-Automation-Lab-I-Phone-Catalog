@@ -150,7 +150,6 @@ export async function main(argv = process.argv) {
     return summary.verdict === 'PASS' ? 0 : 1;
   } catch (err) {
     console.error('[bot] fatal error:', err);
-    reporter.event({ scenario: 'workflow', action: 'run_failed', outcome: 'error', detail: String(err) });
     if (session?.page) {
       await reporter.screenshot(session.page, 'fatal-error');
     }

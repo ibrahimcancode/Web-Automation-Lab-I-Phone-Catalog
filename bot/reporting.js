@@ -252,6 +252,10 @@ export function buildSummary({ events, results, runMeta, config = {} }) {
     verdict = 'FAIL';
     failureReasons.push(`workflow: ${itemsFailed} item(s) failed`);
   }
+  if (events.some((ev) => ev.action === 'run_failed')) {
+    verdict = 'FAIL';
+    failureReasons.push('workflow: fatal error before completion');
+  }
 
   const summary = {
     run_id: runMeta?.run_id ?? null,

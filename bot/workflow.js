@@ -500,132 +500,147 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt, 
   const completedIds = getCompletedIds(checkpoint);
   const isResumed = completedIds.size > 0;
 
-  // Step 1 — home page (first action: spend a bounded window for a delayed popup).
-  const homeCtx = { page, step: 'home' };
-  if (checkpoint && runDir) {
-    checkpoint = setPhase(checkpoint, 'home', 'navigating_home');
-    await writeCheckpoint(runDir, checkpoint);
-  }
-  await navigateWithGuard(page, `${baseUrl}/`, homeCtx, reporter);
-  await waitForPageReady(page, 'home.page', reporter);
-  await clearObstacles(homeCtx, reporter, { waitMs: FIRST_ACTION_OBSTACLE_WAIT_MS });
-  reporter.event({ scenario: 'workflow', action: 'visited_home', outcome: 'ok' });
-  console.log('[bot] home page ready');
-  await demoPause();
+  const results = [];
+  let summary = null;
+  let fatalErr = null;
 
-  // Step 2 — catalog page.
-  const catalogCtx = { page, step: 'catalog' };
-  if (checkpoint && runDir) {
-    checkpoint = setPhase(checkpoint, 'catalog', 'navigating_catalog');
-    await writeCheckpoint(runDir, checkpoint);
-  }
-  await navigateWithGuard(page, `${baseUrl}/catalog`, catalogCtx, reporter);
-  await waitForPageReady(page, 'catalog.page', reporter);
-  await clearObstacles(catalogCtx, reporter);
-  reporter.event({ scenario: 'workflow', action: 'visited_catalog', outcome: 'ok' });
-  console.log('[bot] catalog page ready');
-  await demoPause();
-
-  // Step 3 — reveal all items via "Load more".
-  const cardSelector = getSelectorChain('catalog.card').join(',');
-  const loadMoreSelector = getSelectorChain('catalog.loadMore').join(',');
-  let prevCount = await page.$$eval(cardSelector, (els) => els.length);
-  while (await isVisible(page, loadMoreSelector)) {
-    const grew = await clickLoadMoreAndVerify({
-      page,
-      ctx: catalogCtx,
-      reporter,
-      loadMoreSelector,
-      cardSelector,
-      prevCount,
-    });
-    if (!grew) break;
-    prevCount = await page.$$eval(cardSelector, (els) => els.length);
-    reporter.event({ scenario: 'workflow', action: 'load_more', outcome: 'ok', detail: `cards=${prevCount}` });
-  }
-  const cardCount = await page.$$eval(cardSelector, (els) => els.length);
-  reporter.event({ scenario: 'workflow', action: 'catalog_loaded', outcome: 'ok', detail: `cards=${cardCount}` });
-
-  // Step 4 — collect card links + names.
-  const cardLinkSelector = getSelectorChain('catalog.cardLink').join(',');
-  const cardNameSelector = getSelectorChain('catalog.cardName').join(',');
-  const cards = await page.$$eval(cardLinkSelector, (els) => els.map((a) => ({ href: a.getAttribute('href') })));
-  const names = await page.$$eval(cardNameSelector, (els) => els.map((e) => e.textContent.trim()));
-  const cardMap = new Map();
-  cards.forEach((c, i) => {
-    const href = c.href.startsWith('http') ? c.href : `${baseUrl}${c.href}`;
-    if (!cardMap.has(href)) cardMap.set(href, names[i] ?? null);
-  });
-  const links = [...cardMap.keys()];
-
-  // Observe all items for checkpoint
-  if (checkpoint && runDir) {
-    for (const href of links) {
-      const id = href.split('/model/')[1]?.replace(/\/.*$/, '') ?? href;
-      checkpoint = observeItem(checkpoint, id, href);
-    }
-    checkpoint = setPhase(checkpoint, 'extracting', 'catalog_loaded');
-    await writeCheckpoint(runDir, checkpoint);
-  }
-
-  // Filter out already-completed items when resuming
-  const itemsToProcess = links.filter((href) => {
-    const id = href.split('/model/')[1]?.replace(/\/.*$/, '') ?? href;
-    return !completedIds.has(id);
-  });
-  const limitedLinks = limit ? itemsToProcess.slice(0, limit) : itemsToProcess;
-
-  if (isResumed) {
-    console.log(`[bot] resume: ${completedIds.size} already done, ${limitedLinks.length} remaining`);
-  }
-
-  // Step 5 — visit each detail page.
-  const results = [...(checkpoint?.results ?? [])];
-  for (let i = 0; i < limitedLinks.length; i += 1) {
-    const href = limitedLinks[i];
-    const item = await processItem({ page, baseUrl, href, catalogName: cardMap.get(href), reporter, index: i + 1 });
-    results.push(item);
-
-    // Update checkpoint after each completed item
+  try {
+    // Step 1 — home page (first action: spend a bounded window for a delayed popup).
+    const homeCtx = { page, step: 'home' };
     if (checkpoint && runDir) {
-      if (item.status === 'ok') {
-        checkpoint = completeItem(checkpoint, item.id, item);
-      } else {
-        checkpoint = failItem(checkpoint, item.id, item.error ?? 'unknown', 1);
-      }
+      checkpoint = setPhase(checkpoint, 'home', 'navigating_home');
       await writeCheckpoint(runDir, checkpoint);
     }
-  }
+    await navigateWithGuard(page, `${baseUrl}/`, homeCtx, reporter);
+    await waitForPageReady(page, 'home.page', reporter);
+    await clearObstacles(homeCtx, reporter, { waitMs: FIRST_ACTION_OBSTACLE_WAIT_MS });
+    reporter.event({ scenario: 'workflow', action: 'visited_home', outcome: 'ok' });
+    console.log('[bot] home page ready');
+    await demoPause();
 
-  // Step 6 — summary.
-  const endedAt = new Date();
-  const summary = buildSummary({
-    events: reporter.events,
-    results,
-    runMeta: { run_id: reporter.runId },
-    config: {
-      baseUrl,
-      limit,
-      startedAt,
-      endedAt,
-      durationMs: endedAt.getTime() - startedAt.getTime(),
-      screenshots: reporter.screenshotCount,
-      resumed: isResumed,
-      resumed_from: checkpoint?.resumed_from ?? null,
-    },
-  });
+    // Step 2 — catalog page.
+    const catalogCtx = { page, step: 'catalog' };
+    if (checkpoint && runDir) {
+      checkpoint = setPhase(checkpoint, 'catalog', 'navigating_catalog');
+      await writeCheckpoint(runDir, checkpoint);
+    }
+    await navigateWithGuard(page, `${baseUrl}/catalog`, catalogCtx, reporter);
+    await waitForPageReady(page, 'catalog.page', reporter);
+    await clearObstacles(catalogCtx, reporter);
+    reporter.event({ scenario: 'workflow', action: 'visited_catalog', outcome: 'ok' });
+    console.log('[bot] catalog page ready');
+    await demoPause();
 
-  await writeResults(reporter.runDir, results);
-  await writeRunSummary(reporter.runDir, summary);
-  await writeTrace(reporter.runDir, reporter.events);
+    // Step 3 — reveal all items via "Load more".
+    const cardSelector = getSelectorChain('catalog.card').join(',');
+    const loadMoreSelector = getSelectorChain('catalog.loadMore').join(',');
+    let prevCount = await page.$$eval(cardSelector, (els) => els.length);
+    while (await isVisible(page, loadMoreSelector)) {
+      const grew = await clickLoadMoreAndVerify({
+        page,
+        ctx: catalogCtx,
+        reporter,
+        loadMoreSelector,
+        cardSelector,
+        prevCount,
+      });
+      if (!grew) break;
+      prevCount = await page.$$eval(cardSelector, (els) => els.length);
+      reporter.event({ scenario: 'workflow', action: 'load_more', outcome: 'ok', detail: `cards=${prevCount}` });
+    }
+    const cardCount = await page.$$eval(cardSelector, (els) => els.length);
+    reporter.event({ scenario: 'workflow', action: 'catalog_loaded', outcome: 'ok', detail: `cards=${cardCount}` });
 
-  // Stop Playwright trace and save to run directory
-  await stopTrace(session, tracePath);
+    // Step 4 — collect card links + names.
+    const cardLinkSelector = getSelectorChain('catalog.cardLink').join(',');
+    const cardNameSelector = getSelectorChain('catalog.cardName').join(',');
+    const cards = await page.$$eval(cardLinkSelector, (els) => els.map((a) => ({ href: a.getAttribute('href') })));
+    const names = await page.$$eval(cardNameSelector, (els) => els.map((e) => e.textContent.trim()));
+    const cardMap = new Map();
+    cards.forEach((c, i) => {
+      const href = c.href.startsWith('http') ? c.href : `${baseUrl}${c.href}`;
+      if (!cardMap.has(href)) cardMap.set(href, names[i] ?? null);
+    });
+    const links = [...cardMap.keys()];
 
-  // Finalize checkpoint
-  if (checkpoint && runDir) {
-    checkpoint = finalizeCheckpoint(checkpoint);
-    await writeCheckpoint(runDir, checkpoint);
+    // Observe all items for checkpoint
+    if (checkpoint && runDir) {
+      for (const href of links) {
+        const id = href.split('/model/')[1]?.replace(/\/.*$/, '') ?? href;
+        checkpoint = observeItem(checkpoint, id, href);
+      }
+      checkpoint = setPhase(checkpoint, 'extracting', 'catalog_loaded');
+      await writeCheckpoint(runDir, checkpoint);
+    }
+
+    // Filter out already-completed items when resuming
+    const itemsToProcess = links.filter((href) => {
+      const id = href.split('/model/')[1]?.replace(/\/.*$/, '') ?? href;
+      return !completedIds.has(id);
+    });
+    const limitedLinks = limit ? itemsToProcess.slice(0, limit) : itemsToProcess;
+
+    if (isResumed) {
+      console.log(`[bot] resume: ${completedIds.size} already done, ${limitedLinks.length} remaining`);
+    }
+
+    // Step 5 — visit each detail page.
+    for (let i = 0; i < limitedLinks.length; i += 1) {
+      const href = limitedLinks[i];
+      const item = await processItem({ page, baseUrl, href, catalogName: cardMap.get(href), reporter, index: i + 1 });
+      results.push(item);
+
+      // Update checkpoint after each completed item
+      if (checkpoint && runDir) {
+        if (item.status === 'ok') {
+          checkpoint = completeItem(checkpoint, item.id, item);
+        } else {
+          checkpoint = failItem(checkpoint, item.id, item.error ?? 'unknown', 1);
+        }
+        await writeCheckpoint(runDir, checkpoint);
+      }
+    }
+  } catch (err) {
+    fatalErr = err;
+    throw err;
+  } finally {
+    // Record the fatal error event before building the summary so the verdict
+    // reflects the failure.
+    if (fatalErr) {
+      reporter.event({ scenario: 'workflow', action: 'run_failed', outcome: 'error', detail: String(fatalErr) });
+    }
+
+    // Step 6 — summary + artifacts. Runs on both success and fatal error so
+    // that summary.json, trace.zip, and the checkpoint are always written.
+    const endedAt = new Date();
+    summary = buildSummary({
+      events: reporter.events,
+      results,
+      runMeta: { run_id: reporter.runId },
+      config: {
+        baseUrl,
+        limit,
+        startedAt,
+        endedAt,
+        durationMs: endedAt.getTime() - startedAt.getTime(),
+        screenshots: reporter.screenshotCount,
+        resumed: isResumed,
+        resumed_from: checkpoint?.resumed_from ?? null,
+      },
+    });
+
+    await writeResults(reporter.runDir, results);
+    await writeRunSummary(reporter.runDir, summary);
+    await writeTrace(reporter.runDir, reporter.events);
+
+    // Stop Playwright trace and save to run directory
+    await stopTrace(session, tracePath);
+
+    // Finalize checkpoint
+    if (checkpoint && runDir) {
+      checkpoint = finalizeCheckpoint(checkpoint);
+      await writeCheckpoint(runDir, checkpoint);
+    }
   }
 
   return { results, summary };

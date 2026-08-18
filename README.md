@@ -179,3 +179,8 @@ failure must never replace the real root-cause error).
 - Chaos Engine contract: `CHAOS_ENGINE_SPEC.md`
 - Scenario coverage matrix: `docs/SCENARIOS.md`
 - AI usage log: `docs/AI_LOG.md`
+- Fresh clone verification: `docs/FRESH_CLONE_VERIFICATION.md`
+- Test performance: `docs/TEST_PERFORMANCE.md`
+- Presentation script: `docs/PRESENTATION.md`
+- Demo script: `docs/DEMO_SCRIPT.md`
+- Changelog: `CHANGELOG.md`

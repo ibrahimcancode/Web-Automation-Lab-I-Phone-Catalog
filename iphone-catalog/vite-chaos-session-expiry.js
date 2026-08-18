@@ -1,8 +1,12 @@
 // Vite dev-server chaos middleware — Session expiry scenario.
 //
-// After the first N navigations, intercepts HTML SPA navigations and returns
-// a session-expired interstitial page with a "Continue" button.
+// After the first N HTML navigations, intercepts the next SPA navigation
+// and returns a session-expired interstitial page with a "Continue" button.
 // The interstitial preserves the intended destination via a query parameter.
+//
+// This middleware runs LAST in the chaos chain so it only counts navigations
+// that passed through all earlier middlewares (i.e., not short-circuited by
+// server_errors or rate_limiting 503/429 responses).
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -55,6 +59,11 @@ export default function sessionExpiryMiddleware() {
       syncConfig();
       server.middlewares.use((req, res, next) => {
         if (!enabled || !isHtmlRequest(req)) return next();
+
+        // Vite's SPA fallback re-serves index.html with ?noredirect=1 to avoid
+        // infinite redirect loops. These are not real navigations and must not
+        // be counted toward the trigger threshold.
+        if (req.url.includes('noredirect=1')) return next();
 
         navigationCount += 1;
         if (navigationCount >= triggerAfterN) {

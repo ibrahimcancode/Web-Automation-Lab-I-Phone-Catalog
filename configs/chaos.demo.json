@@ -53,7 +53,7 @@
     "session_expiry": {
       "enabled": true,
       "probability": 1.0,
-      "trigger_after_navigations": 10
+      "trigger_after_navigations": 4
     }
   }
 }

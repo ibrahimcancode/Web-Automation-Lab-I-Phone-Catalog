@@ -2,7 +2,28 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { logEvent } from '../logger.js';
-import { get_decision } from '../engine.js';
+import { get_decision, getConfig } from '../engine.js';
+
+// Demo-only one-shot guard. In deterministic (random_mode=false) runs the popup
+// is forced on by `should_trigger` for every navigation; we instead let it appear
+// exactly once so the tour demonstrates a single newsletter recovery.
+function demoOneShotKey() {
+  return 'chaos_newsletter_seen';
+}
+function demoOneShotSeen() {
+  try {
+    return getConfig()?.random_mode === false && sessionStorage.getItem(demoOneShotKey()) === '1';
+  } catch {
+    return false;
+  }
+}
+function demoOneShotMark() {
+  try {
+    sessionStorage.setItem(demoOneShotKey(), '1');
+  } catch {
+    /* ignore */
+  }
+}
 
 export function NewsletterPopup({ cookieDismissed }) {
   const [visible, setVisible] = useState(false);
@@ -15,6 +36,7 @@ export function NewsletterPopup({ cookieDismissed }) {
   useEffect(() => {
     const decision = get_decision('newsletter_popup');
     if (!decision?.active) return;
+    if (demoOneShotSeen()) return;
 
     const delayMs = Math.round((decision.delay_seconds || 3) * 1000);
 
@@ -38,32 +60,15 @@ export function NewsletterPopup({ cookieDismissed }) {
     return () => clearTimeout(timer);
   }, [cookieDismissed]);
 
-  // When cookie banner dismisses, if popup was pending, start its timer
-  useEffect(() => {
-    if (!pendingRef.current || !cookieDismissed) return;
-    pendingRef.current = false;
-
-    const decision = get_decision('newsletter_popup');
-    if (!decision?.active) return;
-
-    const delayMs = Math.round((decision.delay_seconds || 3) * 1000);
-
-    const timer = setTimeout(() => {
-      setVisible(true);
-      logEvent({
-        scenario: 'newsletter_popup',
-        action: 'triggered',
-        duration_ms: delayMs,
-        result: 'displayed',
-      });
-    }, delayMs);
-
-    return () => clearTimeout(timer);
-  }, [cookieDismissed]);
-
   const close = useCallback(() => {
     setVisible(false);
     logEvent({ scenario: 'newsletter_popup', action: 'dismissed', result: 'closed' });
+    // Demo one-shot: mark as seen only when actually dismissed by the bot, so
+    // the popup keeps re-arming (re-showing) until the sweep catches it — never
+    // "used up" by a transient page that the bot never sweeps.
+    if (getConfig()?.random_mode === false) {
+      demoOneShotMark();
+    }
   }, []);
 
   // ESC key support (§12)

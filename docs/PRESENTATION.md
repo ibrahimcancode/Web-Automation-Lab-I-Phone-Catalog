@@ -21,40 +21,47 @@ clicks, and session expiry — all without any human intervention."
 
 ## Live Demo (3min)
 
-Run: `node scripts/demo-all.js --headless --limit 3`
+Run: `npm run demo:quick`
 
-"We'll run with `--limit 3` for speed. Watch the console output:
+"We'll run the quick demo — a visible, paced browser that extracts just 2 phones
+while every one of the ten scenarios is forced to fire. The script boots its own
+sandbox; no second terminal needed. Watch the console output:
 
-- Home page: **server errors** (503s) retry with backoff, **rate limiting**
-  (429) backs off 1s, **cookie banner** detected and accepted, **captcha**
-  solved via pixel analysis of traffic-light colors, second **cookie
-  banner** accepted.
-- Catalog page: **newsletter popup** subscribed and dismissed, **DOM drift**
+- Home page: **server errors** (503) retried with backoff, **rate limiting**
+  (429 + Retry-After) backs off 1s, **cookie banner** detected and accepted,
+  **captcha** solved via pixel analysis of traffic-light colors.
+- Catalog navigation: **unexpected redirect** detours to /promo and is
+  recovered via noredirect=1, **slow response** (~2s delay) classified in
+  place, **newsletter popup** subscribed and dismissed, **DOM drift**
   detected via fallback selectors, **blocked clicks** removed overlay and
   verified the click took effect.
-- Detail pages: each gets a **newsletter popup** cleared.
-- Second detail: **session expiry** interstitial detected, bot clicks
-  Continue, and resumes scraping.
+- Detail pages: first detail gets a **session expiry** interstitial — bot
+  clicks Continue and resumes scraping.
 
-All 10 scenarios detected and resolved. Summary shows PASS with zero
-failures."
+All 10 scenarios detected and resolved. The checklist shows a tick per
+scenario; summary shows PASS with zero failures."
 
 ## Key Technical Points
 
 - **Pixel analysis CAPTCHA**: No arithmetic. Samples red/yellow/green
   traffic-light pixels from each tile. Confidence threshold 0.5, max 3
-  retries.
+  retries. It is a **local sandbox simulation** — the bot never touches a
+  real CAPTCHA or an external site.
 - **Deterministic demo**: `random_mode: false`, fixed seed, every scenario
-  forced to fire at its controlled point.
+  forced to fire at its controlled point; the four server-side scenarios are
+  coordinated by a shared scheduler so they never collide.
 - **Checkpoint/resume**: Bot writes checkpoints after each item. If the
-  process dies, `--resume` picks up where it left off.
+  process dies, `--resume` picks up where it left off (progress persists —
+  only once-per-session overlays reset with the browser session).
 - **Fatal-run observability**: Even on fatal errors, summary.json, trace.zip,
   and checkpoint are written. Verdict correctly set to FAIL.
-- **91/91 tests pass** from a clean clone following only the README.
+- **Test suite**: 75 unit tests pass in seconds; the full suite including E2E
+  was green at the last recorded clean-clone run (`docs/FRESH_CLONE_VERIFICATION.md`).
 
 ## Closing (15s)
 
-"The full test suite — 66 unit tests and 25 E2E tests — runs in about
-12 minutes. The bot recovers from every disruption type, extracts clean
-structured data, and produces a complete evidence trail: events log,
-screenshots, summary, and Playwright traces."
+"The full test suite — unit plus end-to-end tiers including the chaos
+gauntlet — runs from a single `npm install && npm run setup`. The bot
+recovers from every disruption type, extracts clean structured data, and
+produces a complete evidence trail: events log, screenshots, summary, and
+Playwright traces."

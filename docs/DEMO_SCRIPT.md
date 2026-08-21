@@ -1,35 +1,41 @@
 # Demo Script
 
-## Quick Demo (2–3 minutes)
+## Quick Demo (2–3 minutes) — `npm run demo:quick`
 
 ```bash
-# Start with all 8 scenarios forced on, headless, 3 items
-node scripts/demo-all.js --headless --limit 3
+# Visible, paced Chromium; boots the sandbox itself; extracts 2 phones;
+# forces and recovers ALL 10 scenarios. No second terminal needed.
+npm run demo:quick
 ```
 
 Point out each scenario as it appears in the console output:
 
-1. `server_errors` — first 2 navigations get 503, bot retries
-2. `rate_limiting` — 429 with Retry-After header, bot backs off
+1. `server_errors` — first HTML navigation gets a 503, bot retries with backoff
+2. `rate_limiting` — home retry gets a 429 with Retry-After header, bot backs off
 3. `cookie_banner` — detected and accepted
-4. `simulated_captcha` — pixel analysis solves the gate
-5. `newsletter_popup` — subscribed and dismissed on each page
-6. `dom_drift` — fallback selectors resolve drifted DOM
-7. `blocked_clicks` — overlay removed, click verified
-8. `session_expiry` — interstitial detected, Continue clicked, resumes
+4. `simulated_captcha` — pixel analysis solves the visual traffic-light gate (local sandbox simulation only)
+5. `newsletter_popup` — subscribed and dismissed
+6. `unexpected_redirect` — catalog navigation detours to /promo, bot recovers via noredirect=1
+7. `slow_responses` — catalog load delayed ~2s, classified slow and recovered in place
+8. `dom_drift` — fallback selectors resolve drifted DOM
+9. `blocked_clicks` — overlay removed, click verified
+10. `session_expiry` — interstitial detected, Continue clicked, resumes
 
-Show the final summary: all scenarios detected >= 1, resolved >= 1,
-verdict PASS, 0 failures.
+Show the final checklist ("all ten scenarios detected and resolved") and the verification
+report: verdict PASS, 2/2 phones extracted, 0 failures.
 
-## Full Demo (15–20 minutes)
+For an automated smoke check use `node scripts/demo-all.js --headless --limit 3`.
+
+## Full Demo (`npm run demo:all`)
 
 ```bash
-# Headed browser, all 43 items, all 8 scenarios
+# Headed browser, all 43 items, all 10 scenarios
 npm run demo:all
 ```
 
-This opens a visible Chromium window so the audience can watch the bot
-work through the catalog. Evidence saved to `runs/demo-<run-id>/`.
+This opens a visible Chromium window so the audience can watch the bot work through
+the full catalog (longer run — prefer `demo:quick` for live presentations). Evidence
+saved to `runs/demo-<run-id>/`.
 
 ## Controlled Failure Demo
 

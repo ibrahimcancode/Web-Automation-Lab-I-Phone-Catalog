@@ -14,6 +14,9 @@ as the Resilient Web Automation Lab internship.
   Coverage matrix: `docs/SCENARIOS.md`. Week 2 test results: 34/34 passing (unit + happy path +
   per-scenario + all-four combination).
 - **Week 3 —** scenarios 5–8 + the chaos gauntlet: **Scenarios 5 (slow responses/timeouts), 6 (unexpected redirects), 7 (DOM/selector drift), and 8 (blocked/intercepted clicks) complete**. Scenario 5 adds sandbox-side delayed-response middleware (`vite-chaos-slow.js`), bot-side duration classification (`bot/timeouts.js`) + navigation handler (`bot/handlers/slow_response_handler.js`), and a deterministic scenario test (`site:slow`). Scenario 6 adds a sandbox `/promo` interstitial redirect with `dest` preservation, bot-side `redirect_handler.js` that detects the wrong destination and recovers via `noredirect=1`, and a deterministic scenario test. Scenario 7 adds sandbox alternate DOM variants (`document.body.dataset.chaosDomDrift`), fallback selector chains in `bot/selectors.js`, and `bot/handlers/dom_drift_handler.js` — every logical selector resolves through its chain (bounded per-attempt waits) and each fallback use is logged as `dom_drift` `fallback_used` evidence (`site:drift`). Scenario 8 adds an invisible pointer-blocking overlay (`BlockedClicks.jsx`) over the load-more button plus `bot/handlers/blocked_clicks_handler.js` (rect-overlap detection, removal, then a bounded **verify-the-click-took-effect** check) (`site:blocked`). The **all-eight chaos gauntlet** (`tests/test_gauntlet.spec.js`) runs the real workflow in random mode with all 8 scenarios enabled and two fixed seeds, asserting a complete and correct result with per-seed recovery evidence. See `docs/SCENARIOS.md`.
+- **Week 4 / final — scenarios 9–10, visual CAPTCHA, checkpoint/resume, observability, demo mode**:
+  complete. All **ten** scenarios are detected and recovered; `npm run demo:quick` shows all of them
+  in one short, visible, paced run. Coverage matrix: `docs/SCENARIOS.md`.
 
 ## Repository layout
 
@@ -42,17 +45,17 @@ in `docs/MASTER_SPEC.md` §1.3).
 
 ## Setup
 
-Prerequisites: **Node.js 18+** and **Git**. Windows (PowerShell) is assumed below; the sandbox and
-bot are plain Node scripts otherwise.
+Prerequisites: **Node.js 18+** and **Git** (Windows, Linux and macOS all work).
+
+After cloning, the whole setup is two commands:
 
 ```bash
-# 1. Install root deps (Playwright test runner + chromium)
-npm install
-npm run install:browsers      # playwright install chromium
-
-# 2. Install sandbox deps
-npm.cmd --prefix iphone-catalog install
+npm install        # root deps (Playwright test runner)
+npm run setup      # installs iphone-catalog deps from its lockfile + Playwright Chromium
 ```
+
+`npm run setup` is a cross-platform Node script (`scripts/setup.js`) that prints a clear success or
+failure message and exits non-zero on failure. It never uses Windows-only shell built-ins.
 
 ## Running
 
@@ -87,40 +90,51 @@ overlay blocks the catalog's "Load more" button, and it re-arms `rearm_after_dis
 bot removes it. Run the bot against it to watch it detect the blocker, remove it, and **verify the
 click took effect** (bounded card-count growth check) before moving on.
 
-### Deterministic all-eight live demo (`npm run demo:all`)
+### Deterministic all-ten live demo (`npm run demo:quick` / `npm run demo:all`)
 
-`npm run demo:all` starts the Vite sandbox with a **dedicated demo chaos config**
-(`configs/chaos.demo.json`, separate from the normal `chaos.json` and the gauntlet's random-mode
-configs), opens a **visible headed Chromium**, then runs the full bot workflow once — extracting all
-**43 iPhone models** while every one of the **eight core chaos scenarios is forced to fire at its
-controlled point** (`random_mode: false`, fixed seed — probability is ignored, so nothing is left to
-seed luck):
+`npm run demo:all` (and its short version `npm run demo:quick`) start the Vite sandbox with a
+**dedicated demo chaos config** (`configs/chaos.demo.json`, separate from the normal `chaos.json`
+and the gauntlet's random-mode configs), then run the full bot workflow once while every one of the
+**ten chaos scenarios is forced to fire at its controlled point** (`random_mode: false`, fixed seed
+— probability is ignored, so nothing is left to seed luck):
 
-| Scenario              | Forced at                                                                    |
-| --------------------- | ---------------------------------------------------------------------------- |
-| `cookie_banner`       | home page load (once per session)                                            |
-| `newsletter_popup`    | shortly after the cookie banner is dismissed (re-arms each page)             |
-| `simulated_captcha`   | first page load +1s (once per session)                                       |
-| `server_errors`       | first 2 HTML navigations return 503 (bounded backoff retries)                |
-| `slow_responses`      | every SPA navigation delayed ~2s (classified slow, recovered in place)       |
-| `unexpected_redirect` | every intended navigation detours to `/promo` (recovered via `noredirect=1`) |
-| `dom_drift`           | session-wide alternate DOM variant (fallback selector chains)                |
-| `blocked_clicks`      | catalog "Load more" clicks intercepted by a re-arming overlay                |
+| Scenario              | Forced at                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------- |
+| `cookie_banner`       | home page load (once per session)                                                     |
+| `newsletter_popup`    | shortly after the cookie banner is dismissed (one-shot in demo mode)                  |
+| `simulated_captcha`   | first page load +1s (once per session, visual traffic-light pixel analysis)           |
+| `server_errors`       | 1st HTML navigation returns 503 (bounded backoff retries)                             |
+| `rate_limiting`       | 2nd HTML navigation returns 429 + Retry-After (backoff, then the navigation succeeds) |
+| `slow_responses`      | catalog navigation delayed ~2s (classified slow, recovered in place)                  |
+| `unexpected_redirect` | first catalog navigation detours to `/promo` (recovered via `noredirect=1`)           |
+| `dom_drift`           | session-wide alternate DOM variant (fallback selector chains)                         |
+| `blocked_clicks`      | catalog "Load more" clicks intercepted by a re-arming overlay                         |
+| `session_expiry`      | first detail navigation returns an interstitial (Continue restores session)           |
 
-The demo reuses the exact detect → recover → verify pipeline and bounded retries of a normal run; it
-just guarantees every scenario actually happens. Evidence is saved to `runs/demo-<run-id>/`
-(`results.json`, `summary.json`, `events.jsonl`, `screenshots/`, plus `demo.config.json`), and the
-run finishes with a verification report that asserts all 8 scenarios were **detected ≥ 1 and
-resolved ≥ 1**, `items_processed = 43`, `items_failed = 0`, `invalid = 0`, `duplicates = 0`, and
-`verdict = PASS` (exit 0). Expected duration is roughly 15–20 minutes because all eight disruptions
-overlap deterministically. Use `--limit <n>` for a fast spot-check, `--headless` for CI-style runs,
-or `npm run demo:all:watch` for visible pacing.
+The four server-side scenarios are coordinated by a shared scheduler
+(`iphone-catalog/vite-chaos-demo-scheduler.js`) so each fires exactly once and no two server
+disruptions ever collide on the same navigation attempt; bounded retries are preserved.
+
+The demo reuses the exact detect → recover → verify pipeline of a normal run; it just guarantees
+every scenario actually happens. Evidence is saved to `runs/demo-<run-id>/` (`results.json`,
+`summary.json`, `events.jsonl`, `screenshots/`, plus `demo.config.json`), and the run finishes with a
+checklist and verification report that asserts all **10** scenarios were **detected ≥ 1 and resolved
+≥ 1**, zero failures / invalid / duplicates, and `verdict = PASS` (exit 0). The item-count
+expectation follows `--limit`: `--limit 2` expects 2 processed phones, `--limit 3` expects 3, and a
+run without a limit expects all **43**.
 
 ```bash
-npm run demo:all                # full deterministic all-eight live demo (headed)
-npm run demo:all:watch          # same, with visible pacing between steps
-node scripts/demo-all.js --headless --limit 3   # fast headless verification
+npm run demo:quick               # VISIBLE paced demo: 2 phones, all ten scenarios (~2 min)
+npm run demo:all                 # full deterministic all-ten tour, headed, all 43 models
+npm run demo:all:watch           # same, with visible pacing between steps
+node scripts/demo-all.js --headless --limit 3   # fast headless verification (CI smoke)
 ```
+
+`npm run demo:quick` opens a visible Chromium window with pacing (`BOT_DEMO_PAUSE_MS`) between
+steps, so a supervisor can watch each disruption fire and be recovered — and it boots the sandbox
+itself, so no separate `npm run site` terminal is needed. The full 43-model `demo:all` tour takes
+considerably longer (every scenario plus per-page pacing); prefer `demo:quick` for live
+presentations.
 
 Run the bot against it (default base URL `http://localhost:5173`):
 
@@ -156,19 +170,21 @@ seed 99, where cookie banner, unexpected redirects, DOM drift, and blocked click
 single overlapping run and are all handled.
 
 `tests/test_demo_mode.spec.js` is the **deterministic demo-mode test**: it proves the demo config is
-deterministic and forces all eight scenarios (`random_mode: false`), the catalog ships 43 models,
-and a real workflow run against the demo config detects **and** resolves all eight scenarios with
+deterministic and forces all ten scenarios (`random_mode: false`), the catalog ships 43 models,
+and a real workflow run against the demo config detects **and** resolves all ten scenarios with
 zero invalid/duplicate data. It also covers the reporter screenshot-failure regression (a capture
 failure must never replace the real root-cause error).
 
 ## Known limitations
 
 - **Local sandbox only** — the bot targets the intern's own `localhost` sandbox and must never be
-  pointed at real third-party sites (ethics rule, `docs/MASTER_SPEC.md` §7.5).
+  pointed at real third-party sites (ethics rule, `docs/MASTER_SPEC.md` §7.5). The CAPTCHA is a
+  **local simulated** visual traffic-light gate rendered by the sandbox itself — this project never
+  touches, solves, or bypasses a real CAPTCHA.
 - **Dataset size** — the catalog ships 43 models, slightly above the brief's suggested 20–40 range.
-- **Progress does not survive process restart** — the bot has no persistence layer; a new run always
-  starts from the beginning, and the sandbox's "once per session" overlays reset with the browser
-  session.
+- **Once-per-session overlays reset with the browser session** — extraction progress **does**
+  survive restarts via checkpoint/resume (`bot/checkpoint.js`, `--resume runs/<dir>`), but a new
+  browser session sees the once-per-session overlays (cookie banner, CAPTCHA) again by design.
 - **`chaos.json` changes require restarting Vite** — the sandbox reads the config at dev-server
   startup (bundled `src/chaos/chaos.json`, or a `VITE_CHAOS_JSON` override). Edit the file, then
   restart `npm run site*` for the change to take effect.

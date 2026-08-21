@@ -34,7 +34,10 @@ if (sandboxInstall.status !== 0 || sandboxInstall.error) {
 console.log('[setup] 2/2 Installing Playwright Chromium...');
 let playwrightCli;
 try {
-  playwrightCli = createRequire(path.join(ROOT, 'package.json')).resolve('playwright/cli.js');
+  // cli.js is not in playwright's "exports" map, so resolve the (exported)
+  // package.json and join the CLI path relative to the package directory.
+  const pkgJson = createRequire(path.join(ROOT, 'package.json')).resolve('playwright/package.json');
+  playwrightCli = path.join(path.dirname(pkgJson), 'cli.js');
 } catch {
   fail('Playwright was not found in node_modules — run `npm install` at the repository root first, then retry.');
 }

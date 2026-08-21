@@ -42,7 +42,7 @@
     "blocked_clicks": {
       "enabled": true,
       "probability": 1.0,
-      "rearm_after_dismissal_ms": 1500
+      "rearm_after_dismissal_ms": 5000
     },
     "rate_limiting": {
       "enabled": true,

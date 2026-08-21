@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDemoMode, assignScenario } from './vite-chaos-demo-scheduler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -59,6 +60,32 @@ export default function sessionExpiryMiddleware() {
       syncConfig();
       server.middlewares.use((req, res, next) => {
         if (!enabled || !isHtmlRequest(req)) return next();
+
+        // Demo mode: the shared scheduler fires this exactly once, on the first
+        // detail navigation, so it never collides with the earlier server
+        // scenarios or the bot's recover gotos. The original trigger_after_n /
+        // per-middleware counter logic is only used in non-demo modes.
+        if (isDemoMode(config)) {
+          const scenario = assignScenario(req, config);
+          if (scenario === 'session_expiry') {
+            const dest = encodeURIComponent(req.url || '/');
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'text/html');
+            res.end(
+              `<!doctype html><html><head><title>Session Expired</title></head>` +
+                `<body>` +
+                `<div id="session-expired-interstitial" data-chaos="session_expiry" style="text-align:center;padding:60px 20px;font-family:system-ui,sans-serif;">` +
+                `<h1>Session Expired</h1>` +
+                `<p>Your session has timed out. Please continue to restore your session.</p>` +
+                `<a href="/?session_restored=1&dest=${dest}" id="session-continue-btn" ` +
+                `style="display:inline-block;padding:12px 24px;background:#5856d6;color:white;border-radius:8px;text-decoration:none;font-weight:600;">Continue</a>` +
+                `</div>` +
+                `</body></html>`,
+            );
+            return undefined;
+          }
+          return next();
+        }
 
         // Vite's SPA fallback re-serves index.html with ?noredirect=1 to avoid
         // infinite redirect loops. These are not real navigations and must not

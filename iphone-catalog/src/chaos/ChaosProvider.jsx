@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { initialize, should_trigger, resetDecisionCache } from './engine.js';
+import { initialize, should_trigger, resetDecisionCache, getConfig } from './engine.js';
 import { CookieBanner } from './handlers/CookieBanner.jsx';
 import { NewsletterPopup } from './handlers/NewsletterPopup.jsx';
 import { SimulatedCaptcha } from './handlers/SimulatedCaptcha.jsx';
@@ -56,13 +56,37 @@ export function ChaosProvider({ children }) {
     setReady(true);
   }, []);
 
-  // Scenario 6: Unexpected redirects — intercept navigation and redirect to promo
+  // Scenario 6: Unexpected redirects — intercept navigation and redirect to promo.
+  //
+  // DEMO mode (random_mode=false): fire exactly ONCE on the first non-home SPA
+  // navigation, so the bot recovers from a single controlled redirect instead of
+  // being sent to /promo on every navigation. The home page is skipped so the
+  // tour reaches the redirect point cleanly (the scheduled catalog nav).
+  //
+  // RANDOM mode: the probability roll is respected as-is — NO one-shot, NO
+  // home-page guard — so per-scenario/random gauntlet behavior is unchanged.
   useEffect(() => {
     if (!ready) return;
     const isPromo = location.pathname === '/promo';
     const hasNoRedirect = location.search.includes('noredirect=1') || location.search.includes('dest=');
     const trigger = should_trigger('unexpected_redirect');
     if (!isPromo && !hasNoRedirect && trigger) {
+      const demoMode = getConfig()?.random_mode === false;
+      if (demoMode) {
+        try {
+          if (sessionStorage.getItem('chaos_redirect_seen') === '1') return;
+        } catch {
+          /* storage unavailable */
+        }
+        // Only arm the one-shot redirect on a non-home SPA route (catalog/detail),
+        // so the home page loads clean before the tour reaches the redirect point.
+        if (location.pathname === '/') return;
+        try {
+          sessionStorage.setItem('chaos_redirect_seen', '1');
+        } catch {
+          /* ignore */
+        }
+      }
       const dest = encodeURIComponent(location.pathname + location.search);
       navigate(`/promo?dest=${dest}`, { replace: true });
     }

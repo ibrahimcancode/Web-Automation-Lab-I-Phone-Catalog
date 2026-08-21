@@ -14,8 +14,9 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+import { isDemoMode, assignScenario } from './vite-chaos-demo-scheduler.js';
 
 // SPA routes the middleware may intercept. Anything else (Vite internals,
 // assets, /src/*) passes through untouched.
@@ -77,6 +78,25 @@ export default function chaosServerErrors() {
       syncConfig();
       server.middlewares.use((req, res, next) => {
         if (!enabled || !isHtmlRequest(req)) {
+          return next();
+        }
+
+        // Demo mode: the shared scheduler owns WHEN this scenario fires so it
+        // never overlaps with the other server scenarios. In demo mode this
+        // middleware is the first in the chain, so it also advances the shared
+        // navigation counter once per real SPA request.
+        if (isDemoMode(config)) {
+          const scenario = assignScenario(req, config);
+          if (scenario === 'server_errors') {
+            const status = config.scenarios.server_errors.status_code || 503;
+            res.statusCode = status;
+            res.setHeader('Content-Type', 'text/html');
+            res.end(
+              `<!doctype html><html><head><title>${status} Service Unavailable</title></head>` +
+                `<body><h1>${status} Service Unavailable</h1><p>Simulated by the sandbox chaos engine.</p></body></html>`,
+            );
+            return undefined;
+          }
           return next();
         }
 

@@ -50,6 +50,7 @@ function parseArgs(argv) {
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--headless') args.headless = true;
+    else if (arg === '--headed') args.headless = false;
     else if (arg === '--watch') args.watch = true;
     else if (arg === '--help' || arg === '-h') args.help = true;
     else if (arg === '--limit') args.limit = Number(argv[++i]);
@@ -71,6 +72,7 @@ from every scenario, saves evidence, and verifies PASS.
 
 Options:
   --headless     Run without a visible browser (automated checks)
+  --headed       Run with a visible browser (default; explicit for clarity)
   --watch        Pace the visible demo (BOT_DEMO_PAUSE_MS) between steps
   --limit <n>    Only process the first n items (fast verification runs)
   --port <n>     Sandbox port (default ${DEFAULT_PORT})
@@ -94,12 +96,17 @@ function pad(name, len) {
 
 // Verify the demo acceptance criteria against the run summary. Returns
 // { ok, failures } where failures is a list of human-readable messages.
-export function verifyDemoRun(summary) {
+// When `limit` is set, the item-count expectation scales to the limit so a
+// bounded verification run (--limit N) is still accepted as long as every
+// scenario is detected and recovered — the demo fails ONLY when a scenario is
+// missing, per the acceptance criteria.
+export function verifyDemoRun(summary, { limit = null } = {}) {
   const failures = [];
 
   if (summary.verdict !== 'PASS') failures.push(`verdict=${summary.verdict} (expected PASS)`);
-  if (summary.items_processed !== DEMO_CATALOG_SIZE) {
-    failures.push(`items_processed=${summary.items_processed} (expected ${DEMO_CATALOG_SIZE})`);
+  const expectedItems = limit ? limit : DEMO_CATALOG_SIZE;
+  if (summary.items_processed !== expectedItems) {
+    failures.push(`items_processed=${summary.items_processed} (expected ${expectedItems})`);
   }
   if (summary.items_failed !== 0) failures.push(`items_failed=${summary.items_failed} (expected 0)`);
   if (summary.data_validation.invalid !== 0) {
@@ -112,7 +119,8 @@ export function verifyDemoRun(summary) {
     failures.push(`failure_reasons=${JSON.stringify(summary.failure_reasons)}`);
   }
 
-  // Requirement: every core scenario was detected AND recovered during the run.
+  // Requirement: every one of the ten core scenarios was detected AND recovered
+  // during the run. A missing/unresolved scenario is a hard demo failure.
   for (const name of DEMO_SCENARIOS) {
     const d = summary.disruptions?.[name];
     if (!d) {
@@ -142,7 +150,13 @@ export async function main(argv = process.argv) {
 
   if (args.watch) {
     // Human-visible pacing for the live demo only; never used for correctness.
+    // BOT_DEMO_PAUSE_MS may also be set directly in the environment (e.g.
+    // `set BOT_DEMO_PAUSE_MS=1500`) — that is always respected as-is.
     process.env.BOT_DEMO_PAUSE_MS = String(Number(process.env.BOT_DEMO_PAUSE_MS) || 1500);
+  }
+  const paceMs = Number(process.env.BOT_DEMO_PAUSE_MS || 0);
+  if (paceMs > 0) {
+    console.log(`[demo] pacing enabled (BOT_DEMO_PAUSE_MS=${paceMs}) — watch each disruption fire and be recovered.`);
   }
 
   printChoreography();
@@ -166,8 +180,13 @@ export async function main(argv = process.argv) {
   let exitCode = 1;
   try {
     console.log(
-      `[demo] opening ${args.headless ? 'headless' : 'VISIBLE headed'} Chromium (43 models) — watch every disruption fire and be recovered...`,
+      `[demo] opening ${args.headless ? 'headless' : 'VISIBLE headed'} Chromium — watch every disruption fire and be recovered...`,
     );
+    if (args.limit) {
+      console.log(`[demo] extracting ${args.limit} models.`);
+    } else {
+      console.log(`[demo] extracting all ${DEMO_CATALOG_SIZE} models.`);
+    }
     session = await createSession({
       headless: args.headless,
       baseUrl: site.baseUrl,
@@ -187,19 +206,23 @@ export async function main(argv = process.argv) {
     console.log(`  screenshots     : ${summary.screenshots}`);
     console.log(`  verdict         : ${summary.verdict}`);
     console.log('');
-    console.log(`  scenario${' '.repeat(21)}detected  resolved`);
+    console.log('  ── Final checklist: all ten scenarios detected and resolved ──');
     for (const name of DEMO_SCENARIOS) {
       const d = summary.disruptions?.[name] ?? { detected: 0, resolved: 0 };
-      console.log(`  ${pad(name, 24)} ${String(d.detected).padStart(6)}  ${String(d.resolved).padStart(8)}`);
+      const pass = d.detected >= 1 && d.resolved >= 1;
+      const mark = pass ? '✓' : '✗';
+      console.log(`    ${mark} ${pad(name, 24)} detected=${d.detected}  resolved=${d.resolved}`);
     }
 
-    const { ok, failures } = verifyDemoRun(summary);
+    const { ok, failures } = verifyDemoRun(summary, { limit: args.limit });
     console.log('');
     console.log('┌─────────────────────────────────────────────────────────────────────────┐');
     console.log('│  Verification report                                                    │');
     console.log('└─────────────────────────────────────────────────────────────────────────┘');
+    const extracted = summary.items_processed;
+    const total = args.limit ? `${extracted}/${args.limit}` : `${extracted}/${DEMO_CATALOG_SIZE}`;
     if (ok) {
-      console.log('  PASS — all ten scenarios detected and recovered, 43/43 models extracted,');
+      console.log(`  PASS — all ten scenarios detected and recovered, ${total} models extracted,`);
       console.log('  zero failures, zero invalid, zero duplicates.');
       console.log(`  Evidence: ${runDir} (results.json, summary.json, events.jsonl, screenshots/)`);
     } else {

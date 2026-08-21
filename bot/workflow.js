@@ -40,12 +40,13 @@ function sleepMs(ms) {
 }
 
 // Optional human-visible pacing for the `--headed` watch demo (BOT_DEMO_PAUSE_MS
-// env var). Defaults to 0 = no pause, so normal runs are unaffected. It is a
-// demo aid only, never used for correctness — production timing is explicit
-// waits, per the MASTER_SPEC discipline.
-const DEMO_PAUSE_MS = Number(process.env.BOT_DEMO_PAUSE_MS || 0);
+// env var). Defaults to 0 = no pause, so normal runs (and tests, which run
+// headless with the var unset) are unaffected. Read lazily at call time so the
+// value is honored whether it is exported into the environment before launch or
+// set later by scripts/demo-all.js (--watch), never for correctness.
 function demoPause() {
-  if (DEMO_PAUSE_MS > 0) return sleepMs(DEMO_PAUSE_MS);
+  const ms = Number(process.env.BOT_DEMO_PAUSE_MS || 0);
+  if (ms > 0) return sleepMs(ms);
   return Promise.resolve();
 }
 
@@ -599,6 +600,7 @@ export async function runWorkflow({ session, reporter, limit = null, startedAt, 
         }
         await writeCheckpoint(runDir, checkpoint);
       }
+      await demoPause();
     }
   } catch (err) {
     fatalErr = err;

@@ -37,17 +37,21 @@ export const DEMO_SCENARIOS = [
 export const DEMO_CATALOG_SIZE = 43;
 
 // Where each scenario is forced to fire, at its controlled point, in the demo.
+// Server-side scenarios follow the shared demo scheduler
+// (iphone-catalog/vite-chaos-demo-scheduler.js): nav #1 -> server_errors,
+// nav #2 -> rate_limiting, nav #4 -> slow_responses, nav #5 -> session_expiry.
 export const DEMO_SCENARIO_POINTS = {
   cookie_banner: 'home page load (once per session, dismissed via Accept)',
-  newsletter_popup: 'shortly after the cookie banner is dismissed (re-arms on each page)',
-  simulated_captcha: 'first page load +1s (once per session, solved via math challenge)',
-  server_errors: 'first 2 HTML navigations return 503 (fail_first_n, bounded backoff retries)',
-  slow_responses: 'every SPA navigation delayed ~2s (classified slow, recovered in place)',
-  unexpected_redirect: 'every intended navigation detours to /promo (recovered via noredirect=1)',
+  newsletter_popup: 'shortly after the cookie banner is dismissed (one-shot in demo mode)',
+  simulated_captcha: 'first page load +1s (once per session, solved via visual traffic-light pixel analysis)',
+  server_errors: '1st HTML navigation returns 503 (fail_first_n=1, bounded backoff retries)',
+  slow_responses: 'catalog navigation delayed ~2s (classified slow, recovered in place)',
+  unexpected_redirect: 'first catalog navigation detours to /promo (recovered via noredirect=1)',
   dom_drift: 'session-wide alternate DOM variant (fallback selector chains resolve it)',
   blocked_clicks: 'catalog "Load more" clicks intercepted by a re-arming overlay (removed + click verified)',
-  rate_limiting: 'first HTML navigation returns 429 with Retry-After (backoff + reload)',
-  session_expiry: '4th HTML navigation returns interstitial (Continue restores session)',
+  rate_limiting:
+    '2nd HTML navigation (the home retry) returns 429 + Retry-After (backoff, then the navigation succeeds)',
+  session_expiry: '5th HTML navigation (first detail page) returns interstitial (Continue restores session)',
 };
 
 export function loadDemoConfig() {

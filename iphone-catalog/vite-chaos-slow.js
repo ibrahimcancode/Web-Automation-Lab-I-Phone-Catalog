@@ -14,6 +14,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDemoMode, assignScenario } from './vite-chaos-demo-scheduler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -90,6 +91,18 @@ export default function chaosSlowResponses() {
       syncConfig();
       server.middlewares.use((req, res, next) => {
         if (!enabled || !isHtmlRequest(req)) {
+          return next();
+        }
+
+        // Demo mode: delay exactly the one scheduled navigation (catalog) so the
+        // bot classifies a slow load — no delay on retries/recover gotos.
+        if (isDemoMode(config)) {
+          const scenario = assignScenario(req, config);
+          if (scenario === 'slow_responses') {
+            const delayMs = clampDelay(config.scenarios.slow_responses.min_delay_ms, SAFE_MIN_MS);
+            setTimeout(() => next(), delayMs);
+            return undefined;
+          }
           return next();
         }
 

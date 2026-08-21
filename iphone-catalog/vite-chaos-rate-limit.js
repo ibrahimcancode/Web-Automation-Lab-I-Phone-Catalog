@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDemoMode, assignScenario } from './vite-chaos-demo-scheduler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -53,6 +54,24 @@ export default function rateLimitMiddleware() {
       syncConfig();
       server.middlewares.use((req, res, next) => {
         if (!enabled || !isHtmlRequest(req)) return next();
+
+        // Demo mode: the shared scheduler owns WHEN this fires so it cannot
+        // overlap with server_errors or the other server scenarios.
+        if (isDemoMode(config)) {
+          const scenario = assignScenario(req, config);
+          if (scenario === 'rate_limiting') {
+            const retryAfter = config.scenarios.rate_limiting.retry_after_seconds ?? 1;
+            res.setHeader('Retry-After', String(retryAfter));
+            res.statusCode = 429;
+            res.setHeader('Content-Type', 'text/html');
+            res.end(
+              `<!doctype html><html><head><title>429 Too Many Requests</title></head>` +
+                `<body><h1>429 Too Many Requests</h1><p>Rate limited. Retry after ${retryAfter}s.</p></body></html>`,
+            );
+            return undefined;
+          }
+          return next();
+        }
 
         const sc = config.scenarios.rate_limiting;
         const failFirstN = sc.fail_first_n ?? 2;

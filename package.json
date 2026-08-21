@@ -19,6 +19,7 @@
     "demo:quick": "node scripts/demo-all.js --headed --watch --limit 2",
     "test": "playwright test",
     "test:unit": "playwright test \"tests/test_unit_week2.spec.js\" \"tests/test_unit_week3.spec.js\"",
+    "test:e2e": "playwright test \"tests/test_happy_path.spec.js\" \"tests/test_scenarios_week2.spec.js\" \"tests/test_scenarios_week3.spec.js\" \"tests/test_week4.spec.js\" \"tests/test_demo_mode.spec.js\" \"tests/test_all_four.spec.js\" \"tests/test_gauntlet.spec.js\"",
     "test:happy": "playwright test tests/test_happy_path.spec.js",
     "test:scenarios": "playwright test tests/test_scenarios_week*.spec.js",
     "test:gauntlet": "playwright test tests/test_gauntlet.spec.js",
@@ -27,7 +28,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "quality": "npm run lint && npm run format:check && npm run typecheck",
-    "verify": "npm run quality && npm run test:unit && npm test",
+    "verify": "npm run quality && npm run test:unit && npm run test:e2e",
     "setup": "node scripts/setup.js",
     "install:browsers": "playwright install chromium"
   },

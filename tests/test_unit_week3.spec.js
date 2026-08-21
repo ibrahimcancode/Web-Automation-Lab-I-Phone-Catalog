@@ -12,6 +12,8 @@ import rateLimitHandler from '../bot/handlers/rate_limit_handler.js';
 import sessionExpiryHandler from '../bot/handlers/session_expiry_handler.js';
 import { getSelector, getSelectorChain } from '../bot/selectors.js';
 import { buildSummary } from '../bot/reporting.js';
+import { verifyDemoRun } from '../scripts/demo-all.js';
+import { DEMO_SCENARIOS, DEMO_CATALOG_SIZE } from '../configs/demoConfig.js';
 
 test.describe('classifyNavigationDuration', () => {
   test('classifies fast loads as normal', () => {
@@ -313,5 +315,69 @@ test.describe('session_expiry handler (Scenario 10)', () => {
       runMeta: { run_id: 'test-run' },
     });
     expect(summary.disruptions.session_expiry).toEqual({ detected: 1, resolved: 1, retries: 0 });
+  });
+});
+
+test.describe('verifyDemoRun (limit-aware demo verification)', () => {
+  // Build a summary that satisfies every demo acceptance criterion except what
+  // the caller overrides.
+  function demoSummary({ itemsProcessed = DEMO_CATALOG_SIZE, disruptions = {} } = {}) {
+    const allResolved = {};
+    for (const name of DEMO_SCENARIOS) allResolved[name] = { detected: 1, resolved: 1, retries: 0 };
+    return {
+      verdict: 'PASS',
+      items_processed: itemsProcessed,
+      items_failed: 0,
+      data_validation: { invalid: 0, duplicates: [] },
+      failure_reasons: [],
+      disruptions: { ...allResolved, ...disruptions },
+    };
+  }
+
+  test('--limit 2 expects exactly 2 processed phones', () => {
+    const { ok, failures } = verifyDemoRun(demoSummary({ itemsProcessed: 2 }), { limit: 2 });
+    expect(ok).toBe(true);
+    expect(failures).toEqual([]);
+  });
+
+  test('--limit 3 expects exactly 3 processed phones', () => {
+    const { ok } = verifyDemoRun(demoSummary({ itemsProcessed: 3 }), { limit: 3 });
+    expect(ok).toBe(true);
+  });
+
+  test('no limit expects all 43 phones', () => {
+    expect(verifyDemoRun(demoSummary()).ok).toBe(true);
+
+    const shortRun = verifyDemoRun(demoSummary({ itemsProcessed: 3 }));
+    expect(shortRun.ok).toBe(false);
+    expect(shortRun.failures.some((f) => f.includes('items_processed=3'))).toBe(true);
+  });
+
+  test('a wrong item count under a limit still fails', () => {
+    const { ok, failures } = verifyDemoRun(demoSummary({ itemsProcessed: 2 }), { limit: 3 });
+    expect(ok).toBe(false);
+    expect(failures.some((f) => f.includes('items_processed=2'))).toBe(true);
+  });
+
+  test('a missing scenario is a hard failure even when counts match', () => {
+    const summary = demoSummary({ itemsProcessed: 2 });
+    delete summary.disruptions.rate_limiting;
+    const { ok, failures } = verifyDemoRun(summary, { limit: 2 });
+    expect(ok).toBe(false);
+    expect(failures.some((f) => f.startsWith('rate_limiting'))).toBe(true);
+  });
+
+  test('an unresolved scenario (detected but never resolved) fails', () => {
+    const summary = demoSummary({ itemsProcessed: 2 });
+    summary.disruptions.session_expiry = { detected: 1, resolved: 0, retries: 0 };
+    const { ok, failures } = verifyDemoRun(summary, { limit: 2 });
+    expect(ok).toBe(false);
+    expect(failures.some((f) => f.includes('session_expiry'))).toBe(true);
+  });
+
+  test('a non-PASS verdict always fails regardless of limit', () => {
+    const summary = demoSummary({ itemsProcessed: 2 });
+    summary.verdict = 'FAIL';
+    expect(verifyDemoRun(summary, { limit: 2 }).ok).toBe(false);
   });
 });

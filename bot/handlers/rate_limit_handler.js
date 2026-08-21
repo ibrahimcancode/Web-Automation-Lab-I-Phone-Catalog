@@ -17,14 +17,17 @@ const handler = {
     return ctx.response.status() === 429;
   },
 
-  recover(ctx) {
+  async recover(ctx) {
     const { response } = ctx;
-    const retryAfter = parseInt(response.headers[RETRY_AFTER_HEADER] || '1', 10);
-    const retryMs = Math.min(retryAfter * 1000, 30000);
+    // Playwright's real API: headers() is async and returns lowercase keys.
+    const headers = await response.headers();
+    const retryAfter = parseInt(headers[RETRY_AFTER_HEADER] || '1', 10);
+    const boundedSeconds = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 1;
+    const retryMs = Math.min(boundedSeconds * 1000, 30000);
 
-    console.log(`[bot] rate limiting: 429 received, Retry-After=${retryAfter}s, backing off ${retryMs}ms`);
+    console.log(`[bot] rate limiting: 429 received, Retry-After=${boundedSeconds}s, backing off ${retryMs}ms`);
 
-    return { retry: true, waitMs: retryMs, detail: `retried after ${retryAfter}s backoff` };
+    return { retry: true, waitMs: retryMs, detail: `retried after ${boundedSeconds}s backoff` };
   },
 };
 

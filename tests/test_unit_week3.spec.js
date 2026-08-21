@@ -227,12 +227,35 @@ test.describe('rate_limiting handler (Scenario 9)', () => {
     expect(await rateLimitHandler.detect({ response: null })).toBe(false);
   });
 
-  test('recover returns retry with backoff waitMs', async () => {
-    const response = { status: () => 429, headers: { 'retry-after': '1' } };
-    const rec = rateLimitHandler.recover({ response });
+  test('recover returns retry with backoff waitMs (real Playwright headers() API)', async () => {
+    const response = { status: () => 429, headers: async () => ({ 'retry-after': '1' }) };
+    const rec = await rateLimitHandler.recover({ response });
     expect(rec.retry).toBe(true);
     expect(rec.waitMs).toBeGreaterThanOrEqual(1000);
     expect(rec.detail).toMatch(/backoff/);
+  });
+
+  test('recover honors the actual Retry-After header value', async () => {
+    const response = { status: () => 429, headers: async () => ({ 'retry-after': '3' }) };
+    const rec = await rateLimitHandler.recover({ response });
+    expect(rec.retry).toBe(true);
+    expect(rec.waitMs).toBe(3000);
+    expect(rec.detail).toContain('3s');
+  });
+
+  test('recover stays bounded and defaults when Retry-After is missing or invalid', async () => {
+    const missing = await rateLimitHandler.recover({ response: { status: () => 429, headers: async () => ({}) } });
+    expect(missing.waitMs).toBe(1000);
+
+    const invalid = await rateLimitHandler.recover({
+      response: { status: () => 429, headers: async () => ({ 'retry-after': 'not-a-number' }) },
+    });
+    expect(invalid.waitMs).toBe(1000);
+
+    const huge = await rateLimitHandler.recover({
+      response: { status: () => 429, headers: async () => ({ 'retry-after': '120' }) },
+    });
+    expect(huge.waitMs).toBe(30000);
   });
 
   test('buildSummary counts rate_limiting evidence', () => {

@@ -52,6 +52,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix iphone-catalog
       - run: npx playwright install --with-deps chromium
       - run: npm run test:scenarios
       - run: npm run test:happy
@@ -67,6 +68,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix iphone-catalog
       - run: npx playwright install --with-deps chromium
       - run: npm run test:gauntlet
 
@@ -81,6 +83,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix iphone-catalog
       - run: npx playwright install --with-deps chromium
       - run: node scripts/demo-all.js --headless --limit 3
       - uses: actions/upload-artifact@v4
